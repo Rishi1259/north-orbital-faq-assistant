@@ -1,0 +1,51 @@
+[
+  {
+    "id": "SRC-001",
+    "title": "About North Orbital Community Initiative",
+    "section": "Purpose and eligibility",
+    "path": "/sources/SRC-001",
+    "content": "North Orbital Community Initiative is a fictional nonprofit created only for this chatbot portfolio project. In the fictional city of Meridian Bay, it offers community learning and digital inclusion activities. Its general programs are open to Meridian Bay residents without a membership fee. Individual programs may have age or registration requirements."
+  },
+  {
+    "id": "SRC-002",
+    "title": "Location and Opening Hours",
+    "section": "Community center access",
+    "path": "/sources/SRC-002",
+    "content": "The fictional North Orbital Community Initiative operates from Aurora Harbor Community Center at 14 Meridian Loop in the fictional North Harbor district of Meridian Bay. Regular opening hours are Tuesday through Friday from 10:00 AM to 6:00 PM and Saturday from 10:00 AM to 2:00 PM. The center is closed on Sunday and Monday."
+  },
+  {
+    "id": "SRC-003",
+    "title": "Programs and Registration Guide",
+    "section": "Workshops, fees, registration, cancellations and waitlists",
+    "path": "/sources/SRC-003",
+    "content": "North Orbital Community Initiative offers fictional workshops in basic computer skills, online job searching, personal budgeting, and introductory youth coding. Workshops are free. Participants can register through the fictional website registration form or at the community center front desk. Walk-ins may join only when space remains after registered participants are seated. If a participant cannot attend, the organization asks them to cancel at least 24 hours before the session when possible. When a workshop is full, people may join a waitlist and are contacted in order if places become available."
+  },
+  {
+    "id": "SRC-004",
+    "title": "Youth, Language and Accessibility Guide",
+    "section": "Youth participation and inclusive access",
+    "path": "/sources/SRC-004",
+    "content": "Youth coding workshops are designed for participants aged 12 through 17. Participants younger than 16 need permission from a parent or guardian before attending. The fictional community center has step-free entry, an accessible restroom, and adjustable-height work tables. Workshops are normally delivered in English. Spanish-language assistance is available for selected sessions. Interpreter support for other languages may be requested at least three business days in advance, but availability is not guaranteed."
+  },
+  {
+    "id": "SRC-005",
+    "title": "Technology Access Guide",
+    "section": "Computers, laptop loans and internet access",
+    "path": "/sources/SRC-005",
+    "content": "Participants do not need to bring their own computer to a workshop because shared laptops are available during sessions. A fictional two-week laptop loan program is available to registered participants aged 18 or older while devices are available. Borrowers must provide identification and sign the fictional loan agreement. Free guest Wi-Fi is available inside the community center during regular opening hours."
+  },
+  {
+    "id": "SRC-006",
+    "title": "Volunteering and Donations Guide",
+    "section": "Volunteer participation and donations",
+    "path": "/sources/SRC-006",
+    "content": "Volunteers may help with workshop setup, basic digital-skills coaching, event check-in, and community outreach. The minimum volunteer age is 16. Volunteers under 18 need permission from a parent or guardian. Some roles involving regular work with young participants require a background check before the volunteer starts that role. In this fictional scenario, donations are described as supporting learning materials, equipment maintenance, and free community programs. Because this organization is fictional, the sample project makes no real-world claim that donations are tax deductible."
+  },
+  {
+    "id": "SRC-007",
+    "title": "Contact, Privacy and Safety Information",
+    "section": "Contact details, registration data and emergencies",
+    "path": "/sources/SRC-007",
+    "content": "For this fictional portfolio scenario, general questions can be sent to help@northorbital.example or through the sample website contact form. Registration information is used for workshop scheduling, attendance management, and messages about the participant's registration. North Orbital Community Initiative is not an emergency, medical, crisis, housing, or law-enforcement service. Anyone facing an immediate emergency should contact the appropriate local emergency service."
+  }
+]

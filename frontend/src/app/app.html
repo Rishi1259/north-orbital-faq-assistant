@@ -1,0 +1,138 @@
+<div class="page">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Portfolio AI demo</p>
+      <h1>North Orbital FAQ Assistant</h1>
+      <p class="fictional-label">
+        Fictional nonprofit — demonstration content only
+      </p>
+    </div>
+
+    <button
+      class="restart-button"
+      type="button"
+      [disabled]="loading()"
+      (click)="restartConversation()"
+    >
+      Restart conversation
+    </button>
+  </header>
+
+  <main class="chat-card">
+    <div class="chat-heading">
+      <div>
+        <h2>Ask North Orbital</h2>
+        <p>
+          Answers are grounded in the demo knowledge base
+          and include supporting sources when available.
+        </p>
+      </div>
+
+      <span class="model-badge">
+        Local Ollama
+      </span>
+    </div>
+
+    <section
+      class="messages"
+      aria-label="Conversation"
+      aria-live="polite"
+    >
+      @for (message of messages(); track message.id) {
+        <article
+          class="message"
+          [class.message-user]="message.role === 'user'"
+          [class.message-assistant]="message.role === 'assistant'"
+          [class.message-fallback]="message.fallback"
+          [class.message-error]="message.error"
+        >
+          <span class="message-label">
+            {{ message.role === 'user' ? 'You' : 'Assistant' }}
+          </span>
+
+          <p>{{ message.content }}</p>
+
+          @if (message.sources.length > 0) {
+            <div class="sources">
+              <span>Sources</span>
+
+              @for (
+                source of message.sources;
+                track source.id
+              ) {
+                <a
+                  [href]="sourceHref(source)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ source.id }} · {{ source.title }}
+                </a>
+              }
+            </div>
+          }
+        </article>
+      }
+
+      @if (loading()) {
+        <article
+          class="message message-assistant loading-message"
+          aria-label="Assistant is preparing an answer"
+        >
+          <span class="message-label">
+            Assistant
+          </span>
+
+          <div class="typing">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </article>
+      }
+    </section>
+
+    <form
+      class="composer"
+      (submit)="$event.preventDefault(); sendMessage()"
+    >
+      <label for="chat-message">
+        Ask a question
+      </label>
+
+      <textarea
+        id="chat-message"
+        rows="3"
+        maxlength="1000"
+        placeholder="For example: What workshops do you offer?"
+        [value]="draft()"
+        [disabled]="loading()"
+        (input)="updateDraft($event)"
+        (keydown)="handleKeydown($event)"
+      ></textarea>
+
+      <div class="composer-footer">
+        <span>
+          Enter to send · Shift+Enter for a new line
+        </span>
+
+        <button
+          type="submit"
+          [disabled]="loading() || !draft().trim()"
+        >
+          @if (loading()) {
+            Sending…
+          } @else {
+            Send
+          }
+        </button>
+      </div>
+    </form>
+  </main>
+
+  <footer>
+    <p>
+      Demo limitation: this assistant only answers from a
+      small fictional FAQ knowledge base.
+    </p>
+  </footer>
+</div>

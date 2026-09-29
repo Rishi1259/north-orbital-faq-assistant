@@ -1,0 +1,177 @@
+[
+  {
+    "id": "FAQ-001",
+    "question": "What is North Orbital Community Initiative?",
+    "answer": "North Orbital Community Initiative is a fictional nonprofit created for this chatbot portfolio project. In the fictional city of Meridian Bay, it provides community learning and digital inclusion activities.",
+    "keywords": ["about", "organization", "nonprofit", "north orbital", "purpose"],
+    "sourceIds": ["SRC-001"]
+  },
+  {
+    "id": "FAQ-002",
+    "question": "Who can use North Orbital's services?",
+    "answer": "General programs are open to Meridian Bay residents without a membership fee, although individual programs may have age or registration requirements.",
+    "keywords": ["eligibility", "who can attend", "residents", "membership", "services"],
+    "sourceIds": ["SRC-001"]
+  },
+  {
+    "id": "FAQ-003",
+    "question": "Where is the community center?",
+    "answer": "The fictional community center is Aurora Harbor Community Center at 14 Meridian Loop in the fictional North Harbor district of Meridian Bay.",
+    "keywords": ["address", "location", "where", "community center", "directions"],
+    "sourceIds": ["SRC-002"]
+  },
+  {
+    "id": "FAQ-004",
+    "question": "What are your opening hours?",
+    "answer": "The center is open Tuesday through Friday from 10:00 AM to 6:00 PM and Saturday from 10:00 AM to 2:00 PM. It is closed Sunday and Monday.",
+    "keywords": ["hours", "opening times", "open", "closed", "schedule"],
+    "sourceIds": ["SRC-002"]
+  },
+  {
+    "id": "FAQ-005",
+    "question": "What workshops do you offer?",
+    "answer": "The fictional program offers workshops in basic computer skills, online job searching, personal budgeting, and introductory youth coding.",
+    "keywords": ["workshops", "classes", "programs", "computer skills", "job search", "budgeting", "coding"],
+    "sourceIds": ["SRC-003"]
+  },
+  {
+    "id": "FAQ-006",
+    "question": "Do the workshops cost anything?",
+    "answer": "No. The workshops in this fictional program are free.",
+    "keywords": ["cost", "price", "fee", "free", "workshop cost"],
+    "sourceIds": ["SRC-003"]
+  },
+  {
+    "id": "FAQ-007",
+    "question": "How do I register for a workshop?",
+    "answer": "You can register through the fictional website registration form or at the community center front desk.",
+    "keywords": ["register", "registration", "sign up", "book", "enroll"],
+    "sourceIds": ["SRC-003"]
+  },
+  {
+    "id": "FAQ-008",
+    "question": "Can I attend a workshop without registering?",
+    "answer": "Possibly. Walk-ins may join only when space remains after registered participants are seated, so registering in advance is recommended.",
+    "keywords": ["walk in", "walk-in", "without registering", "no registration", "space"],
+    "sourceIds": ["SRC-003"]
+  },
+  {
+    "id": "FAQ-009",
+    "question": "What ages can join the youth coding workshops?",
+    "answer": "Youth coding workshops are designed for participants aged 12 through 17.",
+    "keywords": ["youth", "age", "ages", "coding", "teen", "teenager"],
+    "sourceIds": ["SRC-004"]
+  },
+  {
+    "id": "FAQ-010",
+    "question": "Does a young participant need parent or guardian permission?",
+    "answer": "Participants younger than 16 need permission from a parent or guardian before attending a youth workshop.",
+    "keywords": ["parent permission", "guardian", "consent", "under 16", "youth"],
+    "sourceIds": ["SRC-004"]
+  },
+  {
+    "id": "FAQ-011",
+    "question": "Do you teach basic computer skills?",
+    "answer": "Yes. Basic computer skills are one of the fictional workshops offered by North Orbital Community Initiative.",
+    "keywords": ["computer", "digital skills", "basic computer", "technology class"],
+    "sourceIds": ["SRC-003"]
+  },
+  {
+    "id": "FAQ-012",
+    "question": "Do I need to bring my own laptop to a workshop?",
+    "answer": "No. Shared laptops are available during workshops, so participants do not need to bring their own computer.",
+    "keywords": ["bring laptop", "own computer", "device", "workshop laptop", "computer required"],
+    "sourceIds": ["SRC-005"]
+  },
+  {
+    "id": "FAQ-013",
+    "question": "Can I borrow a laptop to take home?",
+    "answer": "A fictional two-week laptop loan is available to registered participants aged 18 or older while devices are available. Borrowers must provide identification and sign the loan agreement.",
+    "keywords": ["borrow laptop", "laptop loan", "take home", "device loan", "two weeks"],
+    "sourceIds": ["SRC-005"]
+  },
+  {
+    "id": "FAQ-014",
+    "question": "Is free Wi-Fi available?",
+    "answer": "Yes. Free guest Wi-Fi is available inside the community center during regular opening hours.",
+    "keywords": ["wifi", "wi-fi", "internet", "free internet", "guest network"],
+    "sourceIds": ["SRC-005"]
+  },
+  {
+    "id": "FAQ-015",
+    "question": "Is the community center accessible?",
+    "answer": "The fictional center has step-free entry, an accessible restroom, and adjustable-height work tables.",
+    "keywords": ["accessible", "accessibility", "wheelchair", "step free", "restroom"],
+    "sourceIds": ["SRC-004"]
+  },
+  {
+    "id": "FAQ-016",
+    "question": "Are workshops available in languages other than English?",
+    "answer": "Workshops are normally delivered in English. Spanish-language assistance is available for selected sessions. Interpreter support for other languages may be requested at least three business days in advance, but availability is not guaranteed.",
+    "keywords": ["language", "spanish", "interpreter", "translation", "english"],
+    "sourceIds": ["SRC-004"]
+  },
+  {
+    "id": "FAQ-017",
+    "question": "How can I volunteer?",
+    "answer": "Volunteers may help with workshop setup, basic digital-skills coaching, event check-in, and community outreach.",
+    "keywords": ["volunteer", "volunteering", "help", "community outreach", "coach"],
+    "sourceIds": ["SRC-006"]
+  },
+  {
+    "id": "FAQ-018",
+    "question": "How old do I need to be to volunteer?",
+    "answer": "The minimum volunteer age is 16. Volunteers under 18 need permission from a parent or guardian.",
+    "keywords": ["volunteer age", "minimum age", "16", "under 18", "volunteer"],
+    "sourceIds": ["SRC-006"]
+  },
+  {
+    "id": "FAQ-019",
+    "question": "Do volunteers need a background check?",
+    "answer": "Some roles involving regular work with young participants require a background check before the volunteer starts that role.",
+    "keywords": ["background check", "screening", "volunteer", "youth role"],
+    "sourceIds": ["SRC-006"]
+  },
+  {
+    "id": "FAQ-020",
+    "question": "What are donations used for?",
+    "answer": "In this fictional scenario, donations support learning materials, equipment maintenance, and free community programs.",
+    "keywords": ["donation", "donations", "money", "funding", "support"],
+    "sourceIds": ["SRC-006"]
+  },
+  {
+    "id": "FAQ-021",
+    "question": "Are donations tax deductible?",
+    "answer": "This is a fictional organization used for a portfolio project, so the sample makes no real-world claim that donations are tax deductible.",
+    "keywords": ["tax deductible", "tax", "donation receipt", "deduction"],
+    "sourceIds": ["SRC-006"]
+  },
+  {
+    "id": "FAQ-022",
+    "question": "What should I do if I cannot attend a workshop I registered for?",
+    "answer": "If possible, cancel at least 24 hours before the workshop so the place can be made available to someone else.",
+    "keywords": ["cancel", "cancellation", "cannot attend", "miss workshop", "24 hours"],
+    "sourceIds": ["SRC-003"]
+  },
+  {
+    "id": "FAQ-023",
+    "question": "What happens if a workshop is full?",
+    "answer": "You may join the waitlist. If a place becomes available, people on the waitlist are contacted in order.",
+    "keywords": ["full", "waitlist", "waiting list", "no spaces", "place available"],
+    "sourceIds": ["SRC-003"]
+  },
+  {
+    "id": "FAQ-024",
+    "question": "How can I contact North Orbital Community Initiative?",
+    "answer": "For this fictional portfolio scenario, you can use help@northorbital.example or the sample website contact form.",
+    "keywords": ["contact", "email", "help", "contact form", "reach"],
+    "sourceIds": ["SRC-007"]
+  },
+  {
+    "id": "FAQ-025",
+    "question": "Is North Orbital an emergency or crisis service?",
+    "answer": "No. North Orbital Community Initiative is not an emergency, medical, crisis, housing, or law-enforcement service. Someone facing an immediate emergency should contact the appropriate local emergency service.",
+    "keywords": ["emergency", "crisis", "medical", "housing emergency", "urgent"],
+    "sourceIds": ["SRC-007"]
+  }
+]
