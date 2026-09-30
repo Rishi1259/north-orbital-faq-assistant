@@ -12,6 +12,11 @@ describe('GET /api/health', () => {
     expect(response.body).toEqual({
       status: 'ok',
       service: 'north-orbital-faq-assistant',
+      documentChunks: expect.any(Number),
     });
+
+    expect(
+      response.body.documentChunks,
+    ).toBeGreaterThanOrEqual(0);
   });
 });

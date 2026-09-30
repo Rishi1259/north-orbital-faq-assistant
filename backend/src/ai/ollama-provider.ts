@@ -26,9 +26,9 @@ const OUTPUT_JSON_SCHEMA = {
       type: 'array',
       items: {
         type: 'string',
-        pattern: '^SRC-[0-9]{3}$',
+        pattern: '^(?:SRC-[0-9]{3}|DOC-[A-Z0-9-]+-B[0-9]{4}-C[0-9]{3})$',
       },
-      maxItems: 3,
+      maxItems: 5,
     },
   },
   required: ['canAnswer', 'answer', 'sourceIds'],

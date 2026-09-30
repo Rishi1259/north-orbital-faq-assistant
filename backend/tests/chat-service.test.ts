@@ -164,3 +164,364 @@ describe('factual question extraction', () => {
     );
   });
 });
+
+describe('document-grounded chat', () => {
+  const pdfChunk = {
+    id:
+      'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001-C001',
+
+    documentId:
+      'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE',
+
+    documentTitle:
+      'North Orbital Digital Access Program Guide',
+
+    fileName:
+      'north-orbital-digital-access-guide.pdf',
+
+    sourcePath:
+      'documents/samples/north-orbital-digital-access-guide.pdf',
+
+    format:
+      'pdf' as const,
+
+    blockId:
+      'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001',
+
+    page: 1,
+
+    text:
+      'Registered participants may reserve a digital lab workstation for up to 90 minutes per day. Reservations may be made up to 7 days in advance.',
+  };
+
+  it('returns a PDF page citation', async () => {
+    const generateAnswer = vi.fn(
+      async () => ({
+        canAnswer: true,
+
+        answer:
+          'Registered participants may reserve a lab workstation for up to 90 minutes per day.',
+
+        sourceIds: [
+          pdfChunk.id,
+        ],
+      }),
+    );
+
+    const service =
+      createChatService(
+        {
+          generateAnswer,
+        },
+        {
+          documentChunks: [
+            pdfChunk,
+          ],
+        },
+      );
+
+    const response =
+      await service.chat({
+        message:
+          'How long can I reserve a lab workstation?',
+
+        history: [],
+      });
+
+    expect(
+      response.fallback,
+    ).toBe(false);
+
+    expect(
+      response.sources,
+    ).toEqual([
+      expect.objectContaining({
+        id:
+          pdfChunk.id,
+
+        kind:
+          'document',
+
+        location:
+          'Page 1',
+      }),
+    ]);
+  });
+
+  it('rejects a fabricated document citation', async () => {
+    const generateAnswer = vi.fn(
+      async () => ({
+        canAnswer: true,
+
+        answer:
+          'A fabricated answer.',
+
+        sourceIds: [
+          'DOC-FAKE-B0001-C001',
+        ],
+      }),
+    );
+
+    const service =
+      createChatService(
+        {
+          generateAnswer,
+        },
+        {
+          documentChunks: [
+            pdfChunk,
+          ],
+        },
+      );
+
+    const response =
+      await service.chat({
+        message:
+          'How long can I reserve a lab workstation?',
+
+        history: [],
+      });
+
+    expect(
+      response.fallback,
+    ).toBe(true);
+
+    expect(
+      response.sources,
+    ).toEqual([]);
+  });
+});
+
+describe('document index failure behavior', () => {
+  it('falls back when document knowledge is unavailable', async () => {
+    const generateAnswer =
+      vi.fn(async () => {
+        throw new Error(
+          'Provider should not be called.',
+        );
+      });
+
+    const service =
+      createChatService(
+        {
+          generateAnswer,
+        },
+        {
+          documentChunks: [],
+        },
+      );
+
+    const response =
+      await service.chat({
+        message:
+          'How long can I reserve a digital lab workstation?',
+        history: [],
+      });
+
+    expect(
+      response.fallback,
+    ).toBe(true);
+
+    expect(
+      response.sources,
+    ).toEqual([]);
+
+    expect(
+      generateAnswer,
+    ).not.toHaveBeenCalled();
+  });
+});
+
+describe('mixed FAQ and document grounding', () => {
+  it('can return both FAQ and document citations', async () => {
+    const chunk = {
+      id:
+        'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0002-C001',
+
+      documentId:
+        'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE',
+
+      documentTitle:
+        'North Orbital Digital Access Program Guide',
+
+      fileName:
+        'north-orbital-digital-access-guide.pdf',
+
+      sourcePath:
+        'documents/samples/north-orbital-digital-access-guide.pdf',
+
+      format:
+        'pdf' as const,
+
+      blockId:
+        'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0002',
+
+      page: 2,
+
+      text:
+        'Each registered participant receives 20 black-and-white printed pages per calendar month.',
+    };
+
+    const generateAnswer =
+      vi.fn(
+        async () => ({
+          canAnswer: true,
+
+          answer:
+            'Workshops are free, and registered participants receive 20 black-and-white printed pages per calendar month.',
+
+          sourceIds: [
+            'SRC-003',
+            chunk.id,
+          ],
+        }),
+      );
+
+    const service =
+      createChatService(
+        {
+          generateAnswer,
+        },
+        {
+          documentChunks: [
+            chunk,
+          ],
+        },
+      );
+
+    const response =
+      await service.chat({
+        message:
+          'Are workshops free, and how many pages can I print per month?',
+        history: [],
+      });
+
+    expect(
+      response.fallback,
+    ).toBe(false);
+
+    expect(
+      response.sources,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'SRC-003',
+          kind: 'faq',
+        }),
+
+        expect.objectContaining({
+          id: chunk.id,
+          kind: 'document',
+          location: 'Page 2',
+        }),
+      ]),
+    );
+  });
+});
+
+describe('verification-style questions', () => {
+  it('frames a false reservation claim as a verification request', async () => {
+    const chunk = {
+      id:
+        'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001-C001',
+      documentId:
+        'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE',
+      documentTitle:
+        'North Orbital Digital Access Program Guide',
+      fileName:
+        'north-orbital-digital-access-guide.pdf',
+      sourcePath:
+        'documents/samples/north-orbital-digital-access-guide.pdf',
+      format: 'pdf' as const,
+      blockId:
+        'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001',
+      page: 1,
+      text:
+        'Registered participants may reserve a digital lab workstation for up to 90 minutes per day.',
+    };
+
+    const generateAnswer =
+      vi.fn(async () => ({
+        canAnswer: true,
+        answer:
+          'No. Workstations may be reserved for up to 90 minutes per day.',
+        sourceIds: [chunk.id],
+      }));
+
+    const service =
+      createChatService(
+        { generateAnswer },
+        {
+          documentChunks: [chunk],
+        },
+      );
+
+    await service.chat({
+      message:
+        'Lab workstation reservations last three hours, right?',
+      history: [],
+    });
+
+    const input =
+      generateAnswer.mock.calls[0]?.[0];
+
+    expect(
+      input?.messages.at(-1)?.content,
+    ).toContain(
+      'Verify the following claim',
+    );
+  });
+
+  it('frames a password claim as a verification request', async () => {
+    const chunk = {
+      id:
+        'DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0005-C001',
+      documentId:
+        'DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK',
+      documentTitle:
+        'North Orbital Volunteer Handbook',
+      fileName:
+        'north-orbital-volunteer-handbook.docx',
+      sourcePath:
+        'documents/samples/north-orbital-volunteer-handbook.docx',
+      format: 'docx' as const,
+      blockId:
+        'DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0005',
+      section:
+        'Community conduct',
+      text:
+        'Volunteers must not ask participants for passwords or payment card numbers.',
+    };
+
+    const generateAnswer =
+      vi.fn(async () => ({
+        canAnswer: true,
+        answer:
+          'No. Volunteers must not ask participants for passwords.',
+        sourceIds: [chunk.id],
+      }));
+
+    const service =
+      createChatService(
+        { generateAnswer },
+        {
+          documentChunks: [chunk],
+        },
+      );
+
+    await service.chat({
+      message:
+        'Volunteers are allowed to ask participants for passwords, correct?',
+      history: [],
+    });
+
+    const input =
+      generateAnswer.mock.calls[0]?.[0];
+
+    expect(
+      input?.messages.at(-1)?.content,
+    ).toContain(
+      'Verify the following claim',
+    );
+  });
+});

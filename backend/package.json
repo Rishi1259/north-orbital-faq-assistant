@@ -11,18 +11,26 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "documents:samples": "tsx src/documents/generate-samples.ts",
+    "documents:extract": "tsx src/documents/build-corpus.ts",
+    "documents:index": "npm run documents:extract && tsx src/documents/build-index.ts",
+    "documents:search": "tsx src/documents/search-cli.ts",
+    "predev": "npm run documents:index"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.4",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
+    "mammoth": "^1.13.0",
+    "pdf-parse": "^2.4.5",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -30,6 +38,8 @@
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.3",
     "@types/supertest": "^7.2.1",
+    "docx": "^9.8.1",
+    "pdf-lib": "^1.17.1",
     "supertest": "^7.3.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

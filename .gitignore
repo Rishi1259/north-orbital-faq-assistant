@@ -21,3 +21,10 @@ coverage/
 # Logs
 *.log
 npm-debug.log*
+
+# Document-search working data
+documents/private/*
+!documents/private/.gitkeep
+
+documents/generated/*
+!documents/generated/.gitkeep

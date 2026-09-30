@@ -324,3 +324,107 @@ describe('GET /api/sources/:sourceId', () => {
     );
   });
 });
+
+describe('GET /api/document-sources/:chunkId', () => {
+  const chunk = {
+    id:
+      'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001-C001',
+
+    documentId:
+      'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE',
+
+    documentTitle:
+      'North Orbital Digital Access Program Guide',
+
+    fileName:
+      'north-orbital-digital-access-guide.pdf',
+
+    sourcePath:
+      'documents/private/secret.pdf',
+
+    format:
+      'pdf' as const,
+
+    blockId:
+      'DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001',
+
+    page: 1,
+
+    text:
+      'Registered participants may reserve a digital lab workstation for up to 90 minutes per day.',
+  };
+
+  it('returns citation metadata without exposing the local path', async () => {
+    const provider =
+      createFakeProvider(
+        async () => ({
+          canAnswer: false,
+          answer: '',
+          sourceIds: [],
+        }),
+      );
+
+    const response =
+      await request(
+        createApp({
+          provider,
+          documentChunks: [
+            chunk,
+          ],
+        }),
+      )
+        .get(
+          `/api/document-sources/${chunk.id}`,
+        )
+        .expect(200);
+
+    expect(
+      response.body.page,
+    ).toBe(1);
+
+    expect(
+      response.body.excerpt,
+    ).toContain(
+      '90 minutes',
+    );
+
+    expect(
+      JSON.stringify(
+        response.body,
+      ),
+    ).not.toContain(
+      'documents/private',
+    );
+  });
+});
+
+describe('missing document citation', () => {
+  it('returns 404 for an unknown document chunk', async () => {
+    const provider =
+      createFakeProvider(
+        async () => ({
+          canAnswer: false,
+          answer: '',
+          sourceIds: [],
+        }),
+      );
+
+    const response =
+      await request(
+        createApp({
+          provider,
+          documentChunks: [],
+        }),
+      )
+        .get(
+          '/api/document-sources/DOC-MISSING-B0001-C001',
+        )
+        .expect(404);
+
+    expect(
+      response.body.error.code,
+    ).toBe(
+      'DOCUMENT_SOURCE_NOT_FOUND',
+    );
+  });
+});
