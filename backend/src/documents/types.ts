@@ -41,3 +41,27 @@ export interface DocumentSearchResult {
   chunk: DocumentChunk;
   score: number;
 }
+
+export interface SemanticIndexEntry {
+  chunkId: string;
+  embedding: number[];
+}
+
+export interface SemanticDocumentIndex {
+  generatedAt: string;
+  model: string;
+  dimensions: number;
+  entries: SemanticIndexEntry[];
+}
+
+export interface SemanticSearchResult {
+  chunk: DocumentChunk;
+  score: number;
+}
+
+export interface HybridSearchResult {
+  chunk: DocumentChunk;
+  lexicalScore: number;
+  semanticScore: number;
+  hybridScore: number;
+}

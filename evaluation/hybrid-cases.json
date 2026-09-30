@@ -1,0 +1,122 @@
+[
+  {
+    "id": "HYB-001",
+    "question": "How much computer time does a registered participant get in a day?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001-C001"
+    ],
+    "answerContainsAny": ["90"]
+  },
+  {
+    "id": "HYB-002",
+    "question": "How far ahead can someone book a lab computer?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001-C001"
+    ],
+    "answerContainsAny": ["7 days", "seven days"]
+  },
+  {
+    "id": "HYB-003",
+    "question": "Can I bring one of the lab webcams home with me?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001-C001"
+    ],
+    "answerContainsAny": ["not", "cannot", "can't", "may not"]
+  },
+  {
+    "id": "HYB-004",
+    "question": "What's my monthly black and white printing allowance?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0002-C001"
+    ],
+    "answerContainsAny": ["20"]
+  },
+  {
+    "id": "HYB-005",
+    "question": "Will staff fix my personal laptop if it stops working?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0002-C001"
+    ],
+    "answerContainsAny": ["not", "don't", "do not", "cannot", "can't"]
+  },
+  {
+    "id": "HYB-006",
+    "question": "Can staff recover the password for an outside online service?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0002-C001"
+    ],
+    "answerContainsAny": ["not", "don't", "do not", "cannot", "can't"]
+  },
+  {
+    "id": "HYB-007",
+    "question": "Do new helpers receive training before they begin volunteering?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0003-C001"
+    ],
+    "answerContainsAny": ["60", "orientation"]
+  },
+  {
+    "id": "HYB-008",
+    "question": "How much notice should I give if I need to drop a volunteer shift?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0004-C001"
+    ],
+    "answerContainsAny": ["12"]
+  },
+  {
+    "id": "HYB-009",
+    "question": "Are volunteers allowed to request a participant's card details?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0005-C001"
+    ],
+    "answerContainsAny": ["not", "must not", "cannot", "can't"]
+  },
+  {
+    "id": "HYB-010",
+    "question": "What screening might be required before helping with youth activities?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0006-C001"
+    ],
+    "answerContainsAny": ["background check"]
+  },
+  {
+    "id": "HYB-011",
+    "question": "What happens before a volunteer's first scheduled duty?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0003-C001"
+    ],
+    "answerContainsAny": ["60", "orientation"]
+  },
+  {
+    "id": "HYB-012",
+    "question": "How much time am I allowed to use one of the computers?",
+    "expectedFallback": false,
+    "expectedSourceIds": [
+      "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001-C001"
+    ],
+    "answerContainsAny": ["90"]
+  },
+  {
+    "id": "HYB-013",
+    "question": "What is the capital of France?",
+    "expectedFallback": true,
+    "expectedSourceIds": []
+  },
+  {
+    "id": "HYB-014",
+    "question": "Do you repair bicycles?",
+    "expectedFallback": true,
+    "expectedSourceIds": []
+  }
+]

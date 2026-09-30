@@ -9,6 +9,15 @@ import {
 } from './ai/errors.js';
 
 import {
+  OllamaEmbeddingProvider,
+} from './embeddings/ollama-embedding-provider.js';
+
+import type {
+  EmbeddingProvider,
+} from './embeddings/types.js';
+
+
+import {
   createModelProvider,
 } from './ai/provider-factory.js';
 
@@ -25,8 +34,13 @@ import {
   loadDocumentIndex,
 } from './documents/index-loader.js';
 
+import {
+  tryLoadSemanticDocumentIndex,
+} from './documents/semantic-index-loader.js';
+
 import type {
   DocumentChunk,
+  SemanticDocumentIndex,
 } from './documents/types.js';
 
 import {
@@ -36,6 +50,8 @@ import {
 export interface AppOptions {
   provider?: ModelProvider;
   documentChunks?: DocumentChunk[];
+  semanticIndex?: SemanticDocumentIndex | null;
+  embeddingProvider?: EmbeddingProvider;
 }
 
 export function createApp(
@@ -51,11 +67,58 @@ export function createApp(
     options.documentChunks ??
     loadDocumentIndex().chunks;
 
+  const configuredEmbeddingModel =
+    process.env
+      .OLLAMA_EMBEDDING_MODEL ??
+    'qwen3-embedding:0.6b';
+
+  const useRuntimeHybridDefaults =
+    options.provider === undefined &&
+    options.semanticIndex === undefined &&
+    options.embeddingProvider === undefined;
+
+  const loadedSemanticIndex =
+    useRuntimeHybridDefaults
+      ? tryLoadSemanticDocumentIndex()
+      : options.semanticIndex ?? null;
+
+  const semanticIndex =
+    useRuntimeHybridDefaults &&
+    loadedSemanticIndex &&
+    loadedSemanticIndex.model !==
+      configuredEmbeddingModel
+      ? null
+      : loadedSemanticIndex;
+
+  if (
+    useRuntimeHybridDefaults &&
+    loadedSemanticIndex &&
+    !semanticIndex
+  ) {
+    console.warn(
+      `Semantic index model ${loadedSemanticIndex.model} does not match configured model ${configuredEmbeddingModel}. Falling back to lexical retrieval.`,
+    );
+  }
+
+  const embeddingProvider =
+    options.embeddingProvider ??
+    (
+      useRuntimeHybridDefaults &&
+      semanticIndex
+        ? new OllamaEmbeddingProvider({
+            model:
+              configuredEmbeddingModel,
+          })
+        : undefined
+    );
+
   const chatService =
     createChatService(
       provider,
       {
         documentChunks,
+        semanticIndex,
+        embeddingProvider,
       },
     );
 

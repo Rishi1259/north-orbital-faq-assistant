@@ -35,6 +35,7 @@ flowchart TD
     I --> J[Structured answer validation]
     J --> K[Source ID validation]
     K --> A
+```
 
 ## PDF and Word document search
 
@@ -60,3 +61,89 @@ Example citations:
 ```text
 North Orbital Digital Access Program Guide · Page 1
 North Orbital Volunteer Handbook · Orientation
+```
+## Hybrid RAG document retrieval
+
+Version 0.3.0 upgrades document search from lexical-only retrieval to hybrid retrieval.
+
+The retrieval pipeline is:
+
+```text
+User question
+    |
+    +--> lexical document search
+    |
+    +--> qwen3-embedding:0.6b query embedding
+              |
+              v
+         semantic search
+              |
+              v
+     hybrid deterministic reranking
+              |
+              v
+        top document chunks
+              |
+              v
+         qwen3.5:9b
+              |
+              v
+     server-side citation validation
+```
+
+Hybrid retrieval combines two complementary signals:
+
+- **lexical retrieval** for exact terms, names, numbers, and wording
+- **semantic retrieval** for meaning, paraphrases, and related language
+
+Semantic vectors are generated locally through Ollama and stored in:
+
+```text
+documents/generated/semantic-index.json
+```
+
+Generated indexes remain local and are not committed.
+
+### Build the indexes
+
+```bash
+cd backend
+npm run documents:hybrid-index
+```
+
+### Test hybrid retrieval directly
+
+```bash
+npm run documents:hybrid-search -- \
+  "How much time am I allowed to use one of the computers?"
+```
+
+### Hybrid evaluation
+
+With the backend running:
+
+```bash
+npm run evaluate:hybrid
+```
+
+The v0.3.0 evaluation contains 14 structural cases covering:
+
+- semantic paraphrases
+- exact document facts
+- negative-answer grounding
+- irrelevant questions
+- lexical false positives
+- validated document citations
+
+The recorded v0.3.0 verification run passed all 14 structural checks.
+
+### Local models
+
+The default local models are:
+
+```text
+Generation: qwen3.5:9b
+Embeddings: qwen3-embedding:0.6b
+```
+
+If semantic retrieval is unavailable at runtime, document retrieval falls back to the existing lexical search instead of making the chatbot unavailable.
