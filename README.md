@@ -35,3 +35,28 @@ flowchart TD
     I --> J[Structured answer validation]
     J --> K[Source ID validation]
     K --> A
+
+## PDF and Word document search
+
+Version 0.2.0 adds local document-grounded Q&A for PDF and DOCX files.
+
+The ingestion pipeline:
+
+1. extracts text from trusted local documents
+2. preserves PDF page numbers and DOCX section headings
+3. creates stable document and chunk IDs
+4. splits content into searchable chunks
+5. retrieves relevant chunks using deterministic lexical search
+6. sends only retrieved context to the configured model
+7. validates returned citation IDs before exposing them to the user
+
+Citation behavior:
+
+- PDF sources cite the page number
+- DOCX sources cite the section heading
+
+Example citations:
+
+```text
+North Orbital Digital Access Program Guide · Page 1
+North Orbital Volunteer Handbook · Orientation
