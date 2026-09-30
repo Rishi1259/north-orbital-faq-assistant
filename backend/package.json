@@ -16,7 +16,11 @@
     "documents:extract": "tsx src/documents/build-corpus.ts",
     "documents:index": "npm run documents:extract && tsx src/documents/build-index.ts",
     "documents:search": "tsx src/documents/search-cli.ts",
-    "predev": "npm run documents:index"
+    "predev": "npm run documents:hybrid-index",
+    "documents:semantic": "tsx src/documents/build-semantic-index.ts",
+    "documents:hybrid-index": "npm run documents:index && npm run documents:semantic",
+    "documents:hybrid-search": "tsx src/documents/hybrid-search-cli.ts",
+    "evaluate:hybrid": "node ../evaluation/run-hybrid-evaluation.mjs"
   },
   "keywords": [],
   "author": "",

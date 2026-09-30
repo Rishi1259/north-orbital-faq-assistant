@@ -1,0 +1,173 @@
+{
+  "generatedAt": "2026-09-30T03:36:14.695Z",
+  "total": 14,
+  "passed": 14,
+  "failed": 0,
+  "results": [
+    {
+      "id": "HYB-001",
+      "question": "How much computer time does a registered participant get in a day?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001-C001"
+      ],
+      "answer": "A registered participant may reserve a digital lab workstation for up to 90 minutes per day.",
+      "durationMs": 18735
+    },
+    {
+      "id": "HYB-002",
+      "question": "How far ahead can someone book a lab computer?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001-C001"
+      ],
+      "answer": "Registered participants may reserve a digital lab workstation up to 7 days in advance.",
+      "durationMs": 13434
+    },
+    {
+      "id": "HYB-003",
+      "question": "Can I bring one of the lab webcams home with me?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001-C001"
+      ],
+      "answer": "No, you cannot take the lab webcams home. The guide states that while headsets and webcams are available for use inside the digital lab, they may not be taken home.",
+      "durationMs": 12523
+    },
+    {
+      "id": "HYB-004",
+      "question": "What's my monthly black and white printing allowance?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0002-C001"
+      ],
+      "answer": "Each registered participant receives 20 black-and-white printed pages per calendar month.",
+      "durationMs": 9852
+    },
+    {
+      "id": "HYB-005",
+      "question": "Will staff fix my personal laptop if it stops working?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0002-C001"
+      ],
+      "answer": "No, staff do not repair personal computers.",
+      "durationMs": 8770
+    },
+    {
+      "id": "HYB-006",
+      "question": "Can staff recover the password for an outside online service?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0002-C001"
+      ],
+      "answer": "No, staff do not recover passwords for external services.",
+      "durationMs": 11382
+    },
+    {
+      "id": "HYB-007",
+      "question": "Do new helpers receive training before they begin volunteering?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0003-C001"
+      ],
+      "answer": "Yes, new volunteers complete a 60-minute orientation before their first scheduled shift.",
+      "durationMs": 10982
+    },
+    {
+      "id": "HYB-008",
+      "question": "How much notice should I give if I need to drop a volunteer shift?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0004-C001"
+      ],
+      "answer": "You should cancel a scheduled shift at least 12 hours in advance when possible.",
+      "durationMs": 10844
+    },
+    {
+      "id": "HYB-009",
+      "question": "Are volunteers allowed to request a participant's card details?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0005-C001"
+      ],
+      "answer": "No, volunteers are not allowed to request a participant's card details. They must not ask participants for payment card numbers.",
+      "durationMs": 11389
+    },
+    {
+      "id": "HYB-010",
+      "question": "What screening might be required before helping with youth activities?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "SRC-006",
+        "DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0006-C001"
+      ],
+      "answer": "Some roles involving regular work with young participants require a background check before the volunteer starts that role. Volunteers assigned to applicable youth roles must complete any required background check before beginning that role.",
+      "durationMs": 13414
+    },
+    {
+      "id": "HYB-011",
+      "question": "What happens before a volunteer's first scheduled duty?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "DOC-NORTH-ORBITAL-VOLUNTEER-HANDBOOK-B0003-C001"
+      ],
+      "answer": "Before a volunteer's first scheduled shift, they must complete a 60-minute orientation.",
+      "durationMs": 8032
+    },
+    {
+      "id": "HYB-012",
+      "question": "How much time am I allowed to use one of the computers?",
+      "passed": true,
+      "failures": [],
+      "fallback": false,
+      "sourceIds": [
+        "DOC-NORTH-ORBITAL-DIGITAL-ACCESS-GUIDE-B0001-C001"
+      ],
+      "answer": "Registered participants may reserve a digital lab workstation for up to 90 minutes per day.",
+      "durationMs": 13470
+    },
+    {
+      "id": "HYB-013",
+      "question": "What is the capital of France?",
+      "passed": true,
+      "failures": [],
+      "fallback": true,
+      "sourceIds": [],
+      "answer": "I don't have enough information in the North Orbital knowledge base to answer that. I can help with programs, workshops, registration, accessibility, technology access, volunteering, donations, opening hours, location, contact details, or information contained in the available demonstration documents.",
+      "durationMs": 96
+    },
+    {
+      "id": "HYB-014",
+      "question": "Do you repair bicycles?",
+      "passed": true,
+      "failures": [],
+      "fallback": true,
+      "sourceIds": [],
+      "answer": "I don't have enough information in the North Orbital knowledge base to answer that. I can help with programs, workshops, registration, accessibility, technology access, volunteering, donations, opening hours, location, contact details, or information contained in the available demonstration documents.",
+      "durationMs": 4033
+    }
+  ]
+}

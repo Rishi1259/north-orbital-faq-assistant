@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.3.0
+
+### Added
+
+- local semantic embeddings with `qwen3-embedding:0.6b`
+- persistent semantic document index
+- cosine-similarity document search
+- hybrid lexical + semantic retrieval
+- deterministic hybrid reranking
+- query-side retrieval instructions for semantic search
+- lexical fallback when semantic embeddings are unavailable
+- dedicated 14-case hybrid RAG evaluation
+
+### Improved
+
+- paraphrased document questions can retrieve relevant chunks even without exact wording
+- semantic relevance is prioritized while lexical matches remain useful for exact terminology
+- explicit negative statements and prohibitions are treated as valid grounding evidence
+- unrelated document questions continue to use deterministic fallback
+- document citations remain validated server-side
+
+### Verification
+
+- backend automated tests: 61/61 passing
+- hybrid RAG structural evaluation: 14/14 passing
+
 ## v0.2.0
 
 ### Added
