@@ -9,8 +9,10 @@ export interface ChatMessage {
 
 export interface ChatSource {
   id: string;
+  kind: 'faq' | 'document';
   title: string;
   path: string;
+  location?: string;
 }
 
 export interface ChatResponse {

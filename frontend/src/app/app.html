@@ -65,7 +65,10 @@
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {{ source.id }} · {{ source.title }}
+                  {{ source.title }}
+                  @if (source.location) {
+                    · {{ source.location }}
+                  }
                 </a>
               }
             </div>
