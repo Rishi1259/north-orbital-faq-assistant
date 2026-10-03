@@ -32,9 +32,23 @@ export interface ChatRequest {
 export class ChatApiService {
   private readonly http = inject(HttpClient);
 
-  sendChat(request: ChatRequest) {
-    return this.http
-      .post<ChatResponse>('/api/chat', request)
-      .pipe(timeout(35_000));
-  }
+  sendChat(
+  organizationId: string,
+  chatbotId: string,
+  request: ChatRequest,
+) {
+  const url =
+    `/api/organizations/${encodeURIComponent(
+      organizationId,
+    )}/chatbots/${encodeURIComponent(
+      chatbotId,
+    )}/chat`;
+
+  return this.http
+    .post<ChatResponse>(
+      url,
+      request,
+    )
+    .pipe(timeout(110_000));
+}
 }

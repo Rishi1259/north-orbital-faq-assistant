@@ -23,6 +23,7 @@ export async function extractPdf(
 
   const parser = new PDFParse({
     data,
+    verbosity: 0,
   });
 
   try {
@@ -54,6 +55,7 @@ export async function extractPdf(
       fileName,
       sourcePath,
       format: 'pdf',
+      pageCount: result.total,
       title:
         extractedTitle ??
         path.basename(

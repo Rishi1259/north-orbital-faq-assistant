@@ -1,0 +1,13 @@
+.git
+**/node_modules
+**/dist
+**/.angular
+**/.DS_Store
+**/.env
+**/.env.*
+!**/.env.example
+documents/private
+documents/generated
+documents/samples
+**/coverage
+**/*.log

@@ -1,3 +1,11 @@
+import { createProductionChatService } from './rag/chat-service.js';
+import { ProductionRetriever } from './rag/retriever.js';
+import { ModelQueryRewriter, type QueryRewriter } from './rag/query-rewriter.js';
+import { loadRagConfig, type RagConfig } from './rag/config.js';
+import type { RetrievalRepository, EmbeddingIdentity } from './rag/types.js';
+import { z } from 'zod';
+import type { DocumentService } from './ingestion/document-service.js';
+import { createDocumentRouter } from './ingestion/document-router.js';
 import cors from 'cors';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
@@ -26,18 +34,6 @@ import {
   type ModelProvider,
 } from './ai/types.js';
 
-import {
-  createChatService,
-} from './chat-service.js';
-
-import {
-  loadDocumentIndex,
-} from './documents/index-loader.js';
-
-import {
-  tryLoadSemanticDocumentIndex,
-} from './documents/semantic-index-loader.js';
-
 import type {
   DocumentChunk,
   SemanticDocumentIndex,
@@ -47,11 +43,50 @@ import {
   loadKnowledge,
 } from './knowledge/loader.js';
 
+import {
+  requestLogger,
+} from './logging/logger.js';
+
+import {
+  logger,
+} from './logging/logger.js';
+
+import type {
+  ChatbotService,
+} from './chatbots/chatbot-service.js';
+
+import type {
+  OrganizationService,
+} from './organizations/organization-service.js';
+
+import {
+  createTenantRouter,
+} from './tenancy/tenant-router.js';
+
+import {
+  ChatbotNotFoundError,
+} from './chatbots/errors.js';
+
 export interface AppOptions {
+  retrievalRepository?: RetrievalRepository;
+  ragConfig?: RagConfig;
+  queryRewriter?: QueryRewriter;
+  embeddingIdentity?: EmbeddingIdentity;
+  documentService?: DocumentService;
+  uploadMaxBytes?: number;
   provider?: ModelProvider;
   documentChunks?: DocumentChunk[];
   semanticIndex?: SemanticDocumentIndex | null;
   embeddingProvider?: EmbeddingProvider;
+
+  readinessCheck?:
+    () => Promise<void>;
+
+  organizationService?:
+    OrganizationService;
+
+  chatbotService?:
+    ChatbotService;
 }
 
 export function createApp(
@@ -59,68 +94,26 @@ export function createApp(
 ) {
   const app = express();
 
+  app.use(
+  requestLogger,
+);
+
   const provider =
     options.provider ??
     createModelProvider();
 
-  const documentChunks =
-    options.documentChunks ??
-    loadDocumentIndex().chunks;
-
-  const configuredEmbeddingModel =
-    process.env
-      .OLLAMA_EMBEDDING_MODEL ??
-    'qwen3-embedding:0.6b';
-
-  const useRuntimeHybridDefaults =
-    options.provider === undefined &&
-    options.semanticIndex === undefined &&
-    options.embeddingProvider === undefined;
-
-  const loadedSemanticIndex =
-    useRuntimeHybridDefaults
-      ? tryLoadSemanticDocumentIndex()
-      : options.semanticIndex ?? null;
-
-  const semanticIndex =
-    useRuntimeHybridDefaults &&
-    loadedSemanticIndex &&
-    loadedSemanticIndex.model !==
-      configuredEmbeddingModel
-      ? null
-      : loadedSemanticIndex;
-
-  if (
-    useRuntimeHybridDefaults &&
-    loadedSemanticIndex &&
-    !semanticIndex
-  ) {
-    console.warn(
-      `Semantic index model ${loadedSemanticIndex.model} does not match configured model ${configuredEmbeddingModel}. Falling back to lexical retrieval.`,
-    );
-  }
-
-  const embeddingProvider =
-    options.embeddingProvider ??
-    (
-      useRuntimeHybridDefaults &&
-      semanticIndex
-        ? new OllamaEmbeddingProvider({
-            model:
-              configuredEmbeddingModel,
-          })
-        : undefined
-    );
-
-  const chatService =
-    createChatService(
-      provider,
-      {
-        documentChunks,
-        semanticIndex,
-        embeddingProvider,
-      },
-    );
+  // Legacy source lookup is only available for explicitly injected offline fixtures.
+  // Production startup never reads generated customer-document indexes.
+  const documentChunks = options.documentChunks ?? [];
+  const repository = options.retrievalRepository;
+  const chatService = repository ? createProductionChatService(provider,
+    new ProductionRetriever({ repository,
+      embeddings: options.embeddingProvider ?? new OllamaEmbeddingProvider(),
+      identity: options.embeddingIdentity ?? { provider: 'ollama',
+        model: process.env.OLLAMA_EMBEDDING_MODEL ?? 'qwen3-embedding:0.6b', dimensions: 1024 },
+      config: options.ragConfig ?? loadRagConfig(),
+      rewriter: options.queryRewriter ?? new ModelQueryRewriter(provider), logger,
+    }), repository) : undefined;
 
   const knowledge =
     loadKnowledge();
@@ -187,6 +180,27 @@ export function createApp(
     },
   );
 
+  app.get('/api/organizations/:organizationId/chatbots/:chatbotId/document-sources/:chunkId', async (request, response) => {
+    const parsed = z.object({ organizationId: z.uuid(), chatbotId: z.uuid(), chunkId: z.uuid() }).safeParse(request.params);
+    if (!parsed.success || !repository || !options.chatbotService) {
+      response.status(404).json({ error: { code: 'DOCUMENT_SOURCE_NOT_FOUND', message: 'Document source not found.' } }); return;
+    }
+    try {
+      const { organizationId, chatbotId, chunkId } = parsed.data;
+      await options.chatbotService.getById(organizationId, chatbotId);
+      const [chunk] = await repository.getByIds({ organizationId, chatbotId }, [chunkId]);
+      if (!chunk) { response.status(404).json({ error: { code: 'DOCUMENT_SOURCE_NOT_FOUND', message: 'Document source not found.' } }); return; }
+      response.json({ id: chunk.id, documentId: chunk.documentId, title: chunk.title,
+        page: chunk.page, section: chunk.section, excerpt: chunk.text });
+    } catch (error) {
+      if (error instanceof ChatbotNotFoundError) {
+        response.status(404).json({ error: { code: 'CHATBOT_NOT_FOUND', message: 'Chatbot not found.' } }); return;
+      }
+      logger.error({ requestId: request.id, failure: 'source_lookup' }, 'Source lookup failed.');
+      response.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'An unexpected server error occurred.' } });
+    }
+  });
+
   app.get(
     '/api/document-sources/:chunkId',
     (request, response) => {
@@ -231,6 +245,67 @@ export function createApp(
     },
   );
 
+  app.get(
+  '/api/ready',
+  async (
+    _request,
+    response,
+  ) => {
+    try {
+      if (
+        options.readinessCheck
+      ) {
+        await options
+          .readinessCheck();
+      }
+
+      response.json({
+        status: 'ready',
+
+        service:
+          'north-orbital-faq-assistant',
+      });
+    } catch (error) {
+      logger.error(
+  {
+    err: error,
+  },
+  'Readiness check failed.',
+);
+
+      response
+        .status(503)
+        .json({
+          status:
+            'not_ready',
+
+          service:
+            'north-orbital-faq-assistant',
+        });
+    }
+  },
+);
+
+if (
+    options.organizationService &&
+    options.chatbotService
+  ) {
+    app.use(
+      '/api',
+      createTenantRouter({
+        organizationService:
+          options.organizationService,
+
+        chatbotService:
+          options.chatbotService,
+      }),
+    );
+  }
+
+  if (options.documentService) {
+    app.use('/api', createDocumentRouter(options.documentService, options.uploadMaxBytes ?? 20971520));
+  }
+
   const configuredRateLimit =
     Number(
       process.env
@@ -269,135 +344,152 @@ export function createApp(
       },
     });
 
-  app.post(
-    '/api/chat',
-    chatRateLimiter,
-    async (
-      request,
-      response,
-    ) => {
-      try {
-        const chatRequest =
-          ChatRequestSchema.parse(
-            request.body,
-          );
-
-        const result =
-          await chatService.chat(
-            chatRequest,
-          );
-
-        response.json(
-          result,
+    app.post(
+  '/api/organizations/:organizationId/chatbots/:chatbotId/chat',
+  chatRateLimiter,
+  async (
+    request,
+    response,
+  ) => {
+    try {
+      if (!options.chatbotService) {
+        throw new Error(
+          'Chatbot service is not configured.',
         );
-      } catch (error) {
-        if (
-          error instanceof
-          ZodError
-        ) {
-          response
-            .status(400)
-            .json({
-              error: {
-                code:
-                  'INVALID_REQUEST',
+      }
 
-                message:
-                  'The chat request is invalid.',
+      await options.chatbotService.getById(
+        request.params.organizationId,
+        request.params.chatbotId,
+      );
 
-                details:
-                  error.issues.map(
-                    (issue) => ({
-                      path:
-                        issue.path.join(
-                          '.',
-                        ),
-
-                      message:
-                        issue.message,
-                    }),
-                  ),
-              },
-            });
-
-          return;
-        }
-
-        if (
-          error instanceof
-          ModelProviderError
-        ) {
-          if (
-            error.code ===
-            'timeout'
-          ) {
-            response
-              .status(504)
-              .json({
-                error: {
-                  code:
-                    'MODEL_TIMEOUT',
-
-                  message:
-                    'The AI model took too long to respond. Please try again.',
-                },
-              });
-
-            return;
-          }
-
-          if (
-            error.code ===
-            'invalid_response'
-          ) {
-            response
-              .status(502)
-              .json({
-                error: {
-                  code:
-                    'MODEL_INVALID_RESPONSE',
-
-                  message:
-                    'The AI model returned an invalid response. Please try again.',
-                },
-              });
-
-            return;
-          }
-
-          response
-            .status(503)
-            .json({
-              error: {
-                code:
-                  'MODEL_UNAVAILABLE',
-
-                message:
-                  'The local AI model is unavailable. Make sure Ollama is running and try again.',
-              },
-            });
-
-          return;
-        }
-
-        console.error(
-          error,
+      const chatRequest =
+        ChatRequestSchema.parse(
+          request.body,
         );
 
-        response
-          .status(500)
-          .json({
+      if (!chatService) throw new Error('Production retrieval is not configured.');
+      const result =
+        await chatService!.chat(
+          { organizationId: String(request.params.organizationId), chatbotId: String(request.params.chatbotId) },
+          chatRequest, String(request.id),
+        );
+
+      response.json(result);
+    } catch (error) {
+      if (
+        error instanceof
+        ChatbotNotFoundError
+      ) {
+        response.status(404).json({
+          error: {
+            code:
+              'CHATBOT_NOT_FOUND',
+
+            message:
+              'Chatbot not found.',
+          },
+        });
+
+        return;
+      }
+
+      if (
+        error instanceof
+        ZodError
+      ) {
+        response.status(400).json({
+          error: {
+            code:
+              'INVALID_REQUEST',
+
+            message:
+              'The chat request is invalid.',
+
+            details:
+              error.issues.map(
+                (issue) => ({
+                  path:
+                    issue.path.join('.'),
+
+                  message:
+                    issue.message,
+                }),
+              ),
+          },
+        });
+
+        return;
+      }
+
+      if (
+        error instanceof
+        ModelProviderError
+      ) {
+        if (
+          error.code ===
+          'timeout'
+        ) {
+          response.status(504).json({
             error: {
               code:
-                'INTERNAL_ERROR',
+                'MODEL_TIMEOUT',
 
               message:
-                'An unexpected server error occurred.',
+                'The AI model took too long to respond. Please try again.',
             },
           });
+
+          return;
+        }
+
+        if (
+          error.code ===
+          'invalid_response'
+        ) {
+          response.status(502).json({
+            error: {
+              code:
+                'MODEL_INVALID_RESPONSE',
+
+              message:
+                'The AI model returned an invalid response. Please try again.',
+            },
+          });
+
+          return;
+        }
+
+        response.status(503).json({
+          error: {
+            code:
+              'MODEL_UNAVAILABLE',
+
+            message:
+              'The AI model is unavailable. Please try again.',
+          },
+        });
+
+        return;
       }
-    },
-  );
+
+      logger.error(
+        { requestId: request.id, failure: 'tenant_chat' },
+        'Tenant chat request failed',
+      );
+
+      response.status(500).json({
+        error: {
+          code:
+            'INTERNAL_ERROR',
+
+          message:
+            'An unexpected server error occurred.',
+        },
+      });
+    }
+  },
+);
 
   return app;
 }

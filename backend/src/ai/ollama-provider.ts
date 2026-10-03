@@ -26,9 +26,9 @@ const OUTPUT_JSON_SCHEMA = {
       type: 'array',
       items: {
         type: 'string',
-        pattern: '^(?:SRC-[0-9]{3}|DOC-[A-Z0-9-]+-B[0-9]{4}-C[0-9]{3})$',
+        pattern: '^(?:S[1-9][0-9]{0,2}|SRC-[0-9]{3}|DOC-[A-Z0-9-]+-B[0-9]{4}-C[0-9]{3})$',
       },
-      maxItems: 5,
+      maxItems: 8,
     },
   },
   required: ['canAnswer', 'answer', 'sourceIds'],
@@ -45,6 +45,12 @@ export class OllamaProvider implements ModelProvider {
   constructor(private readonly options: OllamaProviderOptions) {}
 
   async generateAnswer(input: ModelInput) {
+    const result = ModelAnswerSchema.safeParse(await this.generateStructured(input, OUTPUT_JSON_SCHEMA));
+    if (!result.success) throw new ModelProviderError('invalid_response', 'Ollama returned an unexpected answer structure.');
+    return result.data;
+  }
+
+  async generateStructured(input: ModelInput, schema: Record<string, unknown>): Promise<unknown> {
     const controller = new AbortController();
 
     const timeout = setTimeout(
@@ -60,12 +66,12 @@ export class OllamaProvider implements ModelProvider {
           headers: {
             'Content-Type': 'application/json',
           },
-          signal: controller.signal,
+          signal: input.signal ? AbortSignal.any([controller.signal, input.signal]) : controller.signal,
           body: JSON.stringify({
             model: this.options.model,
             stream: false,
             think: false,
-            format: OUTPUT_JSON_SCHEMA,
+            format: schema,
             options: {
               temperature: 0,
             },
@@ -106,7 +112,7 @@ export class OllamaProvider implements ModelProvider {
         );
       }
 
-      return ModelAnswerSchema.parse(parsedContent);
+      return parsedContent;
     } catch (error) {
       if (error instanceof ModelProviderError) {
         throw error;

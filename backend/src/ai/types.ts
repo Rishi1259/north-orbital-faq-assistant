@@ -29,7 +29,7 @@ export const ChatRequestSchema = z.object({
 
 export const CitationIdSchema =
   z.string().regex(
-    /^(?:SRC-\d{3}|DOC-[A-Z0-9-]+-B\d{4}-C\d{3})$/,
+    /^(?:S[1-9]\d{0,2}|SRC-\d{3}|DOC-[A-Z0-9-]+-B\d{4}-C\d{3})$/,
   );
 
 export const ModelAnswerSchema =
@@ -44,7 +44,7 @@ export const ModelAnswerSchema =
       .array(
         CitationIdSchema,
       )
-      .max(5),
+      .max(8),
   });
 
 export type ChatMessage =
@@ -63,11 +63,13 @@ export type ModelAnswer =
   >;
 
 export interface ModelInput {
+  signal?: AbortSignal;
   systemPrompt: string;
   messages: ChatMessage[];
 }
 
 export interface ModelProvider {
+  generateStructured?(input: ModelInput, schema: Record<string, unknown>): Promise<unknown>;
   generateAnswer(
     input: ModelInput,
   ): Promise<ModelAnswer>;

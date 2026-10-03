@@ -1,3 +1,4 @@
+import { chunk, fakeRepository } from './rag-fixtures.js';
 import request from 'supertest';
 import {
   describe,
@@ -10,6 +11,10 @@ import { ModelProviderError } from '../src/ai/errors.js';
 import type { ModelProvider } from '../src/ai/types.js';
 import { createApp } from '../src/app.js';
 
+import {
+  randomUUID,
+} from 'node:crypto';
+
 function createFakeProvider(
   implementation: ModelProvider['generateAnswer'],
 ): ModelProvider {
@@ -18,21 +23,76 @@ function createFakeProvider(
   };
 }
 
-describe('POST /api/chat', () => {
+const ORGANIZATION_ID =
+  randomUUID();
+
+const CHATBOT_ID =
+  randomUUID();
+
+const TENANT_CHAT_PATH =
+  `/api/organizations/${ORGANIZATION_ID}/chatbots/${CHATBOT_ID}/chat`;
+
+const evidenceChunk = chunk({ organizationId: ORGANIZATION_ID, chatbotId: CHATBOT_ID, lexicalRank: 1 });
+function createTenantChatApp(
+  options:
+    Parameters<typeof createApp>[0] = {},
+) {
+  const chatbotService = {
+    getById:
+      vi.fn(
+        async () => ({
+          id:
+            CHATBOT_ID,
+
+          organizationId:
+            ORGANIZATION_ID,
+
+          name:
+            'Test Chatbot',
+
+          status:
+            'active' as const,
+
+          createdAt:
+            new Date(),
+
+          updatedAt:
+            new Date(),
+        }),
+      ),
+  };
+
+  const repository = fakeRepository([evidenceChunk]);
+  repository.lexical = vi.fn(async (_scope, query) => /workshop/i.test(query) ? [evidenceChunk] : []);
+  return createApp({
+    retrievalRepository: repository,
+    embeddingProvider: { embed: async () => { throw new Error('Offline test'); } },
+    ...options,
+
+    chatbotService:
+      chatbotService as never,
+  });
+}
+
+describe('POST tenant-scoped chat endpoint', () => {
   it('returns a grounded supported answer', async () => {
     const provider = createFakeProvider(
       async () => ({
         canAnswer: true,
         answer:
           'The fictional workshops are free.',
-        sourceIds: ['SRC-003'],
+        sourceIds: ['S1'],
       }),
     );
 
     const response = await request(
-      createApp({ provider }),
-    )
-      .post('/api/chat')
+  createTenantChatApp({
+    provider,
+    documentChunks: [],
+    semanticIndex: null,
+  }),
+)
+      .post(TENANT_CHAT_PATH)
       .send({
         message:
           'How much do the workshops cost?',
@@ -43,7 +103,7 @@ describe('POST /api/chat', () => {
     expect(response.body.fallback).toBe(false);
     expect(response.body.sources).toEqual([
       expect.objectContaining({
-        id: 'SRC-003',
+        id: evidenceChunk.id,
       }),
     ]);
   });
@@ -58,9 +118,13 @@ describe('POST /api/chat', () => {
     );
 
     const response = await request(
-      createApp({ provider }),
-    )
-      .post('/api/chat')
+  createTenantChatApp({
+    provider,
+    documentChunks: [],
+    semanticIndex: null,
+  }),
+)
+      .post(TENANT_CHAT_PATH)
       .send({
         message:
           'Do you repair bicycles?',
@@ -85,9 +149,13 @@ describe('POST /api/chat', () => {
     );
 
     const response = await request(
-      createApp({ provider }),
-    )
-      .post('/api/chat')
+  createTenantChatApp({
+    provider,
+    documentChunks: [],
+    semanticIndex: null,
+  }),
+)
+      .post(TENANT_CHAT_PATH)
       .send({
         message: '',
         history: [],
@@ -108,8 +176,8 @@ describe('POST /api/chat', () => {
       }),
     );
 
-    await request(createApp({ provider }))
-      .post('/api/chat')
+    await request(createTenantChatApp({ provider }))
+      .post(TENANT_CHAT_PATH)
       .send({
         message: 'What workshops do you offer?',
         history: Array.from(
@@ -137,9 +205,13 @@ describe('POST /api/chat', () => {
     );
 
     const response = await request(
-      createApp({ provider }),
-    )
-      .post('/api/chat')
+  createTenantChatApp({
+    provider,
+    documentChunks: [],
+    semanticIndex: null,
+  }),
+)
+      .post(TENANT_CHAT_PATH)
       .send({
         message: 'What workshops do you offer?',
         history: [],
@@ -162,9 +234,13 @@ describe('POST /api/chat', () => {
     );
 
     const response = await request(
-      createApp({ provider }),
-    )
-      .post('/api/chat')
+  createTenantChatApp({
+    provider,
+    documentChunks: [],
+    semanticIndex: null,
+  }),
+)
+      .post(TENANT_CHAT_PATH)
       .send({
         message: 'What workshops do you offer?',
         history: [],
@@ -186,9 +262,13 @@ describe('POST /api/chat', () => {
     );
 
     const response = await request(
-      createApp({ provider }),
-    )
-      .post('/api/chat')
+  createTenantChatApp({
+    provider,
+    documentChunks: [],
+    semanticIndex: null,
+  }),
+)
+      .post(TENANT_CHAT_PATH)
       .send({
         message: 'What workshops do you offer?',
         history: [],
@@ -211,9 +291,13 @@ describe('chat API reliability', () => {
     );
 
     const response = await request(
-      createApp({ provider }),
-    )
-      .post('/api/chat')
+  createTenantChatApp({
+    provider,
+    documentChunks: [],
+    semanticIndex: null,
+  }),
+)
+      .post(TENANT_CHAT_PATH)
       .send({
         message: 'x'.repeat(1001),
         history: [],
@@ -238,8 +322,8 @@ describe('chat API reliability', () => {
       }),
     );
 
-    await request(createApp({ provider }))
-      .post('/api/chat')
+    await request(createTenantChatApp({ provider }))
+      .post(TENANT_CHAT_PATH)
       .send({
         message: 'What workshops do you offer?',
         history: [
@@ -267,9 +351,13 @@ describe('chat API reliability', () => {
     );
 
     const response = await request(
-      createApp({ provider }),
-    )
-      .post('/api/chat')
+  createTenantChatApp({
+    provider,
+    documentChunks: [],
+    semanticIndex: null,
+  }),
+)
+      .post(TENANT_CHAT_PATH)
       .send({
         message: 'What workshops do you offer?',
         history: [],
@@ -293,8 +381,12 @@ describe('GET /api/sources/:sourceId', () => {
     );
 
     const response = await request(
-      createApp({ provider }),
-    )
+  createApp({
+    provider,
+    documentChunks: [],
+    semanticIndex: null,
+  }),
+)
       .get('/api/sources/SRC-003')
       .expect(200);
 
@@ -314,8 +406,12 @@ describe('GET /api/sources/:sourceId', () => {
     );
 
     const response = await request(
-      createApp({ provider }),
-    )
+  createApp({
+    provider,
+    documentChunks: [],
+    semanticIndex: null,
+  }),
+)
       .get('/api/sources/SRC-999')
       .expect(404);
 

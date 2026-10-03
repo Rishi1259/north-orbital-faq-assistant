@@ -15,6 +15,10 @@ import type {
   SemanticDocumentIndex,
 } from './types.js';
 
+import {
+  logger,
+} from '../logging/logger.js';
+
 export interface DocumentRetrieverOptions {
   semanticIndex?: SemanticDocumentIndex | null;
   embeddingProvider?: EmbeddingProvider;
@@ -54,10 +58,12 @@ export async function retrieveDocumentChunks(
           result.chunk,
       );
     } catch (error) {
-      console.warn(
-        'Hybrid retrieval failed; falling back to lexical document search.',
-        error,
-      );
+      logger.warn(
+  {
+    err: error,
+  },
+  'Hybrid retrieval failed; falling back to lexical document search.',
+);
     }
   }
 

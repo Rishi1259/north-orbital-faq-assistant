@@ -1,3 +1,5 @@
+// Historical local/FAQ service for offline tooling and regression fixtures.
+// Production tenant chat is implemented in rag/chat-service.ts.
 import type {
   ModelProvider,
   ChatMessage,

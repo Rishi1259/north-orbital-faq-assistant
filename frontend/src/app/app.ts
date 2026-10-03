@@ -15,6 +15,10 @@ import {
   type ChatSource,
 } from './chat-api.service';
 
+import {
+  CHATBOT_CONTEXT,
+} from './chatbot-context';
+
 interface UiMessage extends ChatMessage {
   id: number;
   sources: ChatSource[];
@@ -89,10 +93,14 @@ export class App {
 
     this.activeRequest =
       this.chatApi
-        .sendChat({
-          message,
-          history,
-        })
+  .sendChat(
+    CHATBOT_CONTEXT.organizationId,
+    CHATBOT_CONTEXT.chatbotId,
+    {
+      message,
+      history,
+    },
+  )
         .subscribe({
           next: (response) => {
             this.appendMessage({
@@ -174,6 +182,9 @@ export class App {
         error.error?.error?.code as string | undefined;
 
       switch (backendCode) {
+        case 'CHATBOT_NOT_FOUND':
+          return 'This chatbot is unavailable or could not be found.';
+
         case 'INVALID_REQUEST':
           return 'That message could not be processed. Please shorten or rephrase it and try again.';
 

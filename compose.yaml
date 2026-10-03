@@ -1,0 +1,194 @@
+# All credentials below are for local development only.
+x-storage-environment: &storage-environment
+  OBJECT_STORAGE_ENDPOINT: http://minio:9000
+  OBJECT_STORAGE_REGION: us-east-1
+  OBJECT_STORAGE_BUCKET: ${OBJECT_STORAGE_BUCKET:-north-orbital-documents}
+  OBJECT_STORAGE_ACCESS_KEY: north_orbital_dev
+  OBJECT_STORAGE_SECRET_KEY: north_orbital_storage_dev_only
+  OBJECT_STORAGE_FORCE_PATH_STYLE: "true"
+  OBJECT_STORAGE_TIMEOUT_MS: 120000
+  UPLOAD_MAX_BYTES: 20971520
+  INGESTION_MAX_ATTEMPTS: 3
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: north-orbital-postgres
+
+    environment:
+      POSTGRES_DB: north_orbital
+      POSTGRES_USER: north_orbital
+      POSTGRES_PASSWORD: north_orbital_dev
+
+    ports:
+      - "127.0.0.1:55432:5432"
+
+    volumes:
+      - north_orbital_postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U north_orbital -d north_orbital"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    restart: unless-stopped
+
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: migrations
+
+    environment:
+      DATABASE_URL: postgresql://north_orbital:north_orbital_dev@postgres:5432/north_orbital
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    restart: "no"
+
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+
+    container_name: north-orbital-backend
+
+    environment:
+      <<: *storage-environment
+      NODE_ENV: production
+      PORT: 3000
+
+      DATABASE_URL: postgresql://north_orbital:north_orbital_dev@postgres:5432/north_orbital
+      DATABASE_POOL_MAX: 10
+      DATABASE_CONNECTION_TIMEOUT_MS: 5000
+
+      MODEL_PROVIDER: ollama
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: qwen3.5:9b
+      OLLAMA_EMBEDDING_MODEL: qwen3-embedding:0.6b
+      MODEL_TIMEOUT_MS: 30000
+      RAG_TOP_K: ${RAG_TOP_K:-5}
+      RAG_LEXICAL_CANDIDATES: ${RAG_LEXICAL_CANDIDATES:-30}
+      RAG_VECTOR_CANDIDATES: ${RAG_VECTOR_CANDIDATES:-30}
+      RAG_VECTOR_WEIGHT: ${RAG_VECTOR_WEIGHT:-0.85}
+      RAG_LEXICAL_WEIGHT: ${RAG_LEXICAL_WEIGHT:-0.15}
+      RAG_RRF_K: ${RAG_RRF_K:-60}
+      RAG_MAX_CONTEXT_CHARS: ${RAG_MAX_CONTEXT_CHARS:-12000}
+      RAG_QUERY_REWRITE_ENABLED: ${RAG_QUERY_REWRITE_ENABLED:-true}
+      EMBEDDING_TIMEOUT_MS: 30000
+
+      LOG_LEVEL: info
+
+    ports:
+      - "127.0.0.1:3001:3000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+
+  minio:
+    image: north-orbital-minio:RELEASE.2025-10-15T17-29-55Z
+    build:
+      context: .
+      dockerfile: docker/minio.Dockerfile
+      target: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: north_orbital_dev
+      MINIO_ROOT_PASSWORD: north_orbital_storage_dev_only
+    ports:
+      - "127.0.0.1:59000:9000"
+      - "127.0.0.1:59001:9001"
+    volumes:
+      - north_orbital_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  minio-init:
+    image: north-orbital-mc:RELEASE.2025-08-13T08-35-41Z
+    build:
+      context: .
+      dockerfile: docker/minio.Dockerfile
+      target: mc
+    environment:
+      <<: *storage-environment
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mc alias set local http://minio:9000 "$$OBJECT_STORAGE_ACCESS_KEY" "$$OBJECT_STORAGE_SECRET_KEY" &&
+        mc mb --ignore-existing "local/$$OBJECT_STORAGE_BUCKET" &&
+        mc anonymous set none "local/$$OBJECT_STORAGE_BUCKET"
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: worker
+    init: true
+    environment:
+      <<: *storage-environment
+      NODE_ENV: production
+      DATABASE_URL: postgresql://north_orbital:north_orbital_dev@postgres:5432/north_orbital
+      DATABASE_POOL_MAX: 5
+      DATABASE_CONNECTION_TIMEOUT_MS: 5000
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_EMBEDDING_MODEL: qwen3-embedding:0.6b
+      EMBEDDING_TIMEOUT_MS: 60000
+      INGESTION_EMBEDDING_CONCURRENCY: 2
+      INGESTION_POLL_INTERVAL_MS: 1000
+      INGESTION_STALE_AFTER_MS: 300000
+      OCR_ENABLED: "true"
+      OCR_COMMAND: ocrmypdf
+      OCR_TIMEOUT_MS: 180000
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    stop_grace_period: 5m
+    restart: unless-stopped
+
+volumes:
+  north_orbital_postgres_data:
+  north_orbital_minio_data:

@@ -16,6 +16,7 @@ export interface ExtractedDocument {
   format: DocumentFormat;
   title: string;
   blocks: ExtractedBlock[];
+  pageCount?: number;
   warnings: string[];
 }
 
