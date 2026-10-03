@@ -23,7 +23,7 @@ const result: ProcessingResult = { chunks: [{ id: 'old-id', documentId: 'ignored
 
 beforeAll(async () => {
   await admin.query(`CREATE SCHEMA ${schema}`);
-  await runner({ databaseUrl: process.env.DATABASE_URL!, dir: fileURLToPath(new URL('../../migrations', import.meta.url)),
+  await runner({ advisoryLockMode: 'wait', databaseUrl: process.env.DATABASE_URL!, dir: fileURLToPath(new URL('../../migrations', import.meta.url)),
     direction: 'up', migrationsTable: 'pgmigrations', migrationsSchema: schema, schema: [schema, 'public'],
     logger: { info() {}, warn() {}, error() {}, debug() {} } });
 }, 30000);

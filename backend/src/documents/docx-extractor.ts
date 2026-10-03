@@ -31,6 +31,7 @@ export async function extractDocx(
       },
     );
 
+  if (result.value.length > 10_000_000) throw new Error('DOCX extraction limit exceeded.');
   const $ = load(result.value);
 
   const blocks: ExtractedBlock[] = [];
@@ -76,6 +77,8 @@ export async function extractDocx(
       section: currentSection,
     });
   });
+
+  if (blocks.reduce((size, block) => size + block.text.length, 0) > 5_000_000) throw new Error('Document text limit exceeded.');
 
   return {
     id: documentId,

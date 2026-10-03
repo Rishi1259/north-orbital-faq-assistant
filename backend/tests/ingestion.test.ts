@@ -175,3 +175,9 @@ describe('worker with fake external dependencies', () => {
     expect(f.repository.fail).toHaveBeenCalledWith(f.job, new IngestionError('download'));
   });
 });
+
+it('rejects original upload path tricks rather than accepting them as metadata', async () => {
+  for (const filename of ['../sample.pdf', '/absolute.pdf', 'C:\\sample.pdf', 'bad\u0000.pdf']) {
+    await expect(validateUpload(path.join(samples, 'north-orbital-digital-access-guide.pdf'), filename, 20971520)).rejects.toMatchObject({ code: 'UNSUPPORTED_FILE' });
+  }
+});

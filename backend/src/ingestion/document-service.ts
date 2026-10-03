@@ -17,9 +17,10 @@ export class DocumentService {
     z.uuid().parse(scope.organizationId); z.uuid().parse(scope.chatbotId);
     await this.chatbots.getById(scope.organizationId, scope.chatbotId);
   }
-  async upload(scope: TenantScope, filePath: string, filename: string) {
+  async upload(scope: TenantScope, filePath: string, filename: string, claimedMime?: string) {
     await this.assertTenant(scope);
     const upload = await validateUpload(filePath, filename, this.maxBytes);
+    if (claimedMime && claimedMime !== 'application/octet-stream' && claimedMime !== upload.mimeType) throw new DocumentError(415, 'UNSUPPORTED_FILE', 'File MIME type does not match its signature.');
     const object = { ...scope, documentId: randomUUID(), format: upload.format };
     try {
       await this.storage.put(object, filePath, upload.mimeType);

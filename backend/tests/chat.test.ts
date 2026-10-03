@@ -9,7 +9,7 @@ import {
 
 import { ModelProviderError } from '../src/ai/errors.js';
 import type { ModelProvider } from '../src/ai/types.js';
-import { createApp } from '../src/app.js';
+import { createApp } from './authenticated-app.js';
 
 import {
   randomUUID,

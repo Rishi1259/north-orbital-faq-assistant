@@ -60,16 +60,12 @@
                 source of message.sources;
                 track source.id
               ) {
-                <a
-                  [href]="sourceHref(source)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+                <button type="button" (click)="showSource(source)">
                   {{ source.title }}
                   @if (source.location) {
                     · {{ source.location }}
                   }
-                </a>
+                </button>
               }
             </div>
           }

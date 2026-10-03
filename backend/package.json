@@ -25,7 +25,13 @@
     "worker": "node dist/ingestion/worker.js",
     "worker:dev": "tsx src/ingestion/worker.ts",
     "test:ocr": "npm run build && node scripts/verify-ocr.mjs",
-    "evaluate:rag": "vitest run tests/production-rag.test.ts tests/integration/production-rag.test.ts"
+    "evaluate:rag": "vitest run tests/production-rag.test.ts tests/integration/production-rag.test.ts",
+    "auth:create-owner": "tsx src/security/create-owner.ts",
+    "security:init": "node scripts/init-security.mjs",
+    "backup:postgres": "node scripts/postgres-backup.mjs",
+    "backup:verify": "node scripts/postgres-backup.mjs --verify",
+    "backup:objects": "tsx src/operations/object-backup.ts",
+    "restore:objects": "tsx src/operations/object-restore.ts"
   },
   "keywords": [],
   "author": "",
@@ -33,6 +39,8 @@
   "type": "module",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1145.0",
+    "@prometheus-io/client": "^0.16.1",
+    "argon2": "^0.45.1",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.4",

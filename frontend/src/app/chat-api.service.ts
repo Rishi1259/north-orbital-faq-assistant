@@ -1,3 +1,4 @@
+import { publicApiOrigin } from './chatbot-context';
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { timeout } from 'rxjs';
@@ -32,23 +33,11 @@ export interface ChatRequest {
 export class ChatApiService {
   private readonly http = inject(HttpClient);
 
-  sendChat(
-  organizationId: string,
-  chatbotId: string,
-  request: ChatRequest,
-) {
-  const url =
-    `/api/organizations/${encodeURIComponent(
-      organizationId,
-    )}/chatbots/${encodeURIComponent(
-      chatbotId,
-    )}/chat`;
-
-  return this.http
-    .post<ChatResponse>(
-      url,
-      request,
-    )
-    .pipe(timeout(110_000));
-}
+  source(publicId: string, sourceId: string) {
+    return this.http.get<{ excerpt: string }>(`${publicApiOrigin()}/api/public/chatbots/${encodeURIComponent(publicId)}/document-sources/${encodeURIComponent(sourceId)}`);
+  }
+  sendChat(publicId: string, request: ChatRequest) {
+    return this.http.post<ChatResponse>(`${publicApiOrigin()}/api/public/chatbots/${encodeURIComponent(publicId)}/chat`, request)
+      .pipe(timeout(110_000));
+  }
 }

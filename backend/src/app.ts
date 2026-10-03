@@ -1,3 +1,12 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { loadSecurityConfig, type SecurityConfig } from './security/config.js';
+import { authentication, tenantAuthorization, authRouter, organizationCreation } from './security/http.js';
+import type { SecurityStore } from './security/repository.js';
+import type { PublicChatbotRepository } from './public/repository.js';
+import { publicRouter, publicAdminRouter } from './public/router.js';
+import { createMetrics } from './operations/metrics.js';
+import { HttpError } from './security/errors.js';
 import { createProductionChatService } from './rag/chat-service.js';
 import { ProductionRetriever } from './rag/retriever.js';
 import { ModelQueryRewriter, type QueryRewriter } from './rag/query-rewriter.js';
@@ -68,6 +77,9 @@ import {
 } from './chatbots/errors.js';
 
 export interface AppOptions {
+  security?: SecurityStore;
+  securityConfig?: SecurityConfig;
+  publicChatbots?: PublicChatbotRepository;
   retrievalRepository?: RetrievalRepository;
   ragConfig?: RagConfig;
   queryRewriter?: QueryRewriter;
@@ -93,6 +105,11 @@ export function createApp(
   options: AppOptions = {},
 ) {
   const app = express();
+  const securityConfig = options.securityConfig ?? loadSecurityConfig();
+  app.set('trust proxy', securityConfig.TRUST_PROXY_HOPS);
+  app.disable('x-powered-by');
+  const metrics = createMetrics(securityConfig);
+  app.use(metrics.middleware);
 
   app.use(
   requestLogger,
@@ -122,12 +139,17 @@ export function createApp(
     helmet(),
   );
 
-  app.use(
-    cors({
-      origin:
-        'http://localhost:4200',
-    }),
-  );
+  // Admin CORS is entirely separate from customer widget CORS.
+  const adminCors = cors({ origin: securityConfig.ADMIN_APP_ORIGIN, credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'X-CSRF-Token'] });
+  app.use(['/api/auth', '/api/organizations', '/api/sources', '/api/document-sources', '/api/chat'], adminCors);
+  app.use('/api/public', (_req, res, next) => { res.vary('Origin'); res.set('Cache-Control', 'no-store'); next(); });
+  app.get('/widget/v1.js', (_req, res) => {
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.type('application/javascript').sendFile(path.resolve(fileURLToPath(new URL('../widget/v1.js', import.meta.url))));
+  });
+  app.get('/internal/metrics', metrics.endpoint);
 
   app.use(
     express.json({
@@ -149,6 +171,16 @@ export function createApp(
       });
     },
   );
+
+  app.use('/api/auth', authRouter(options.security, securityConfig, metrics));
+  if (options.publicChatbots && options.security) app.use('/api/public',
+    publicRouter(options.publicChatbots, options.security, securityConfig, chatService, repository, metrics));
+
+  // Fail closed even when services are absent. All legacy/internal namespaces require a session.
+  app.use(['/api/organizations', '/api/sources', '/api/document-sources', '/api/chat'], authentication(options.security, securityConfig));
+  app.use('/api/organizations/:organizationId', tenantAuthorization(options.security, securityConfig, metrics));
+  app.post('/api/organizations', organizationCreation(options.security));
+  if (options.publicChatbots && options.security) app.use('/api', publicAdminRouter(options.publicChatbots, options.security));
 
   app.get(
     '/api/sources/:sourceId',
@@ -268,7 +300,7 @@ export function createApp(
     } catch (error) {
       logger.error(
   {
-    err: error,
+    failure: 'readiness',
   },
   'Readiness check failed.',
 );
@@ -298,12 +330,13 @@ if (
 
         chatbotService:
           options.chatbotService,
+        security: options.security,
       }),
     );
   }
 
   if (options.documentService) {
-    app.use('/api', createDocumentRouter(options.documentService, options.uploadMaxBytes ?? 20971520));
+    app.use('/api', createDocumentRouter(options.documentService, options.uploadMaxBytes ?? 20971520, options.security));
   }
 
   const configuredRateLimit =
@@ -491,5 +524,22 @@ if (
   },
 );
 
+  app.use((_req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Resource not found.' } }));
+  app.use((error: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    let status = 500, code = 'INTERNAL_ERROR', message = 'An unexpected server error occurred.';
+    if (error instanceof HttpError) { status = error.status; code = error.code; message = error.message; }
+    else if (error instanceof ZodError) { status = 400; code = 'INVALID_REQUEST'; message = 'The request is invalid.'; }
+    else if (error instanceof ModelProviderError) {
+      status = error.code === 'timeout' ? 504 : error.code === 'invalid_response' ? 502 : 503;
+      code = error.code === 'timeout' ? 'MODEL_TIMEOUT' : error.code === 'invalid_response' ? 'MODEL_INVALID_RESPONSE' : 'MODEL_UNAVAILABLE';
+      message = 'Chat is temporarily unavailable. Please try again.';
+    } else if ((error as {type?: string})?.type === 'entity.too.large') { status = 413; code = 'REQUEST_TOO_LARGE'; message = 'Request exceeds the size limit.'; }
+    else if (error instanceof SyntaxError) { status = 400; code = 'INVALID_REQUEST'; message = 'Invalid JSON request.'; }
+    else if ((error as {code?: string})?.code === '23505') { status = 409; code = 'CONFLICT'; message = 'Resource already exists.'; }
+    if ([401, 403, 429].includes(status)) logger.info({ requestId: req.id, userId: res.locals.session?.userId,
+      action: 'request.rejected', result: code, rateLimited: status === 429 }, 'Security request rejected.');
+    if (status >= 500) logger.error({ requestId: req.id, failure: code }, 'Request failed.');
+    res.status(status).json({ error: { code, message } });
+  });
   return app;
 }

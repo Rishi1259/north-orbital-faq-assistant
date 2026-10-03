@@ -8,7 +8,7 @@ import request from 'supertest';
 import pino from 'pino';
 import { PostgresRetrievalRepository } from '../../src/rag/repository.js';
 import { ProductionRetriever } from '../../src/rag/retriever.js';
-import { createApp } from '../../src/app.js';
+import { createApp } from '../authenticated-app.js';
 import { ChatbotService } from '../../src/chatbots/chatbot-service.js';
 import { ChatbotRepository } from '../../src/chatbots/chatbot-repository.js';
 import { OrganizationRepository } from '../../src/organizations/organization-repository.js';
@@ -44,7 +44,7 @@ async function add(s: TenantScope, status: string, content: string, axis: number
 }
 beforeAll(async () => {
   await admin.query(`CREATE SCHEMA ${schema}`);
-  await runner({ databaseUrl: process.env.DATABASE_URL!, dir: fileURLToPath(new URL('../../migrations', import.meta.url)),
+  await runner({ advisoryLockMode: 'wait', databaseUrl: process.env.DATABASE_URL!, dir: fileURLToPath(new URL('../../migrations', import.meta.url)),
     direction: 'up', migrationsTable: 'pgmigrations', migrationsSchema: schema, schema: [schema, 'public'],
     logger: { info() {}, warn() {}, error() {}, debug() {} } });
   client = await pool.connect(); repository = new PostgresRetrievalRepository(client);

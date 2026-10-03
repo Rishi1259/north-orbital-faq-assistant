@@ -11,3 +11,5 @@ documents/generated
 documents/samples
 **/coverage
 **/*.log
+
+backups

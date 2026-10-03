@@ -30,6 +30,10 @@ export const logger =
       paths: [
         'req.headers.authorization',
         'req.headers.cookie',
+        'req.headers["x-csrf-token"]',
+        'password', 'password_hash', 'token', 'csrfToken', 'sessionToken',
+        'OBJECT_STORAGE_ACCESS_KEY', 'OBJECT_STORAGE_SECRET_KEY', 'RATE_LIMIT_HASH_SECRET', 'METRICS_TOKEN',
+        'req.body', 'body',
         'res.headers["set-cookie"]',
       ],
 
@@ -65,8 +69,7 @@ export const requestLogger =
           method:
             request.method,
 
-          url:
-            request.url,
+
         };
       },
 

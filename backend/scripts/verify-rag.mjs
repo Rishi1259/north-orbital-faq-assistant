@@ -1,3 +1,4 @@
+import { smokeSession } from './smoke-session.mjs';
 // Opt-in model-dependent smoke check. Never prints queries, answers, evidence or credentials.
 // Existing accepted tenant documents are read-only; only this run's empty tenant is removed.
 import 'dotenv/config';
@@ -5,6 +6,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { PostgresRetrievalRepository } from '../dist/rag/repository.js';
+let session;
 const root = process.env.RAG_TEST_API_URL ?? 'http://backend:3000';
 const scope = {
   organizationId: process.env.RAG_TEST_ORGANIZATION_ID ?? 'f94827a2-4ec3-4bd0-92cc-49accd1cdf9b',
@@ -16,7 +18,7 @@ const base = s => `/api/organizations/${s.organizationId}/chatbots/${s.chatbotId
 let temporaryOrganization;
 let currentCase = 'health';
 async function chat(s, message, history = []) {
-  const response = await fetch(`${root}${base(s)}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  const response = await session.fetch(`${root}${base(s)}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, history }), signal: AbortSignal.timeout(110000) });
   assert.equal(response.status, 200);
   return { body: await response.json(), requestId: response.headers.get('x-request-id') };
@@ -31,7 +33,7 @@ async function grounded(result, mime) {
     const row = rows.find(r => r.id === source.id); assert.ok(row);
     assert.equal(source.title, row.title);
     assert.ok(source.path.startsWith(`${base(scope).replace('/api', '')}/document-sources/`));
-    const linked = await fetch(`${root}/api${source.path}`); assert.equal(linked.status, 200);
+    const linked = await session.fetch(`${root}/api${source.path}`); assert.equal(linked.status, 200);
     assert.equal((await linked.json()).documentId, row.documentId);
   }
   if (mime) {
@@ -42,10 +44,11 @@ async function grounded(result, mime) {
   console.log(JSON.stringify({ case: currentCase, passed: true, sourceCount: body.sources.length, requestId: result.requestId }));
 }
 try {
+  session = await smokeSession(pool, root, scope.organizationId);
   for (const endpoint of ['health', 'ready']) {
     let healthy = false;
     for (let attempt = 0; attempt < 30; attempt++) {
-      try { healthy = (await fetch(`${root}/api/${endpoint}`, { signal: AbortSignal.timeout(2000) })).status === 200; } catch {}
+      try { healthy = (await session.fetch(`${root}/api/${endpoint}`, { signal: AbortSignal.timeout(2000) })).status === 200; } catch {}
       if (healthy) break;
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -79,25 +82,26 @@ try {
   ]);
   assert.match(follow.body.answer, /90|ninety/i); await grounded(follow);
   currentCase = 'tenant_isolation';
-  const organization = await fetch(`${root}/api/organizations`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  const organization = await session.fetch(`${root}/api/organizations`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: 'RAG empty smoke tenant', slug: `rag-smoke-${randomUUID()}` }) });
   assert.equal(organization.status, 201); temporaryOrganization = (await organization.json()).organization.id;
-  const bot = await fetch(`${root}/api/organizations/${temporaryOrganization}/chatbots`, {
+  const bot = await session.fetch(`${root}/api/organizations/${temporaryOrganization}/chatbots`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'RAG empty smoke bot' }) });
   assert.equal(bot.status, 201);
   const other = { organizationId: temporaryOrganization, chatbotId: (await bot.json()).chatbot.id };
   const isolated = await chat(other, 'How long is the orientation for new volunteers?');
   assert.equal(isolated.body.fallback, true); assert.deepEqual(isolated.body.sources, []);
-  const wrong = await fetch(`${root}${base({ ...scope, organizationId: temporaryOrganization })}/chat`, {
+  const wrong = await session.fetch(`${root}${base({ ...scope, organizationId: temporaryOrganization })}/chat`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Orientation?' }) });
   assert.equal(wrong.status, 404);
   for (const source of direct.body.sources) {
-    assert.equal((await fetch(`${root}${base(other)}/document-sources/${source.id}`)).status, 404);
+    assert.equal((await session.fetch(`${root}${base(other)}/document-sources/${source.id}`)).status, 404);
   }
   console.log(JSON.stringify({ case: currentCase, passed: true, requestId: isolated.requestId }));
 } catch {
   console.error(JSON.stringify({ case: currentCase, passed: false })); process.exitCode = 1;
 } finally {
   if (temporaryOrganization) await pool.query('DELETE FROM organizations WHERE id=$1', [temporaryOrganization]);
+  await session?.close();
   await pool.end();
 }

@@ -1,3 +1,4 @@
+import { smokeSession } from './smoke-session.mjs';
 // Opt-in end-to-end check against a running Compose stack. Creates only synthetic
 // tenants, uploads public samples, and removes only its own rows/objects afterward.
 import 'dotenv/config';
@@ -16,12 +17,13 @@ import { S3ObjectStorage } from '../dist/storage/object-storage.js';
 const environment = loadEnvironment();
 const pool = new Pool({ connectionString: environment.DATABASE_URL });
 const storage = new S3ObjectStorage(environment);
+let session;
 const root = process.env.INGESTION_TEST_API_URL ?? 'http://backend:3000';
 const createdOrgs = [];
 const createdObjects = [];
 const directory = await mkdtemp(path.join(tmpdir(), 'ingestion-smoke-'));
 async function api(url, options) {
-  const response = await fetch(`${root}/api${url}`, options);
+  const response = await session.fetch(`${root}/api${url}`, options);
   const body = await response.json();
   assert.ok(response.ok, `Unexpected API status ${response.status}`);
   return { response, body };
@@ -45,6 +47,7 @@ async function waitFor(base, documentId, expected) {
   throw new Error('Document processing deadline exceeded.');
 }
 try {
+  session = await smokeSession(pool, root);
   const owner = await tenant(); const other = await tenant();
   const base = `/organizations/${owner.organizationId}/chatbots/${owner.chatbotId}/documents`;
   const wrongBase = base.replace(owner.organizationId, other.organizationId);
@@ -61,8 +64,8 @@ try {
     const { response, body } = await api(base, { method: 'POST', body: form });
     assert.equal(response.status, 202); assert.equal(body.document.status, 'pending');
     const object = { ...owner, documentId: body.document.id, format: sample.format }; createdObjects.push(object);
-    assert.equal((await fetch(`${root}/api${wrongBase}/${body.document.id}`)).status, 404);
-    assert.equal((await fetch(`${root}/api${wrongBase}/${body.document.id}/retry`, { method: 'POST' })).status, 404);
+    assert.equal((await session.fetch(`${root}/api${wrongBase}/${body.document.id}`)).status, 404);
+    assert.equal((await session.fetch(`${root}/api${wrongBase}/${body.document.id}/retry`, { method: 'POST' })).status, 404);
     const ready = await waitFor(base, body.document.id, 'ready');
     assert.equal(ready.ocrUsed, sample.ocr); assert.ok(ready.chunkCount > 0);
     const counts = (await pool.query(`SELECT count(*)::integer AS chunks, min(e.dimensions) AS dimensions
@@ -95,5 +98,5 @@ try {
   for (const object of createdObjects) await storage.delete(object);
   for (const id of createdOrgs) await pool.query('DELETE FROM organizations WHERE id=$1', [id]);
   await rm(directory, { recursive: true, force: true });
-  storage.close(); await pool.end();
+  await session?.close(); storage.close(); await pool.end();
 }

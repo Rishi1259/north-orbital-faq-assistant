@@ -16,7 +16,7 @@ import {
 } from './chat-api.service';
 
 import {
-  CHATBOT_CONTEXT,
+  publicChatbotId,
 } from './chatbot-context';
 
 interface UiMessage extends ChatMessage {
@@ -76,7 +76,7 @@ export class App {
         .slice(-6)
         .map((item) => ({
           role: item.role,
-          content: item.content,
+          content: item.content.slice(0, 1000),
         }));
 
     this.appendMessage({
@@ -94,8 +94,7 @@ export class App {
     this.activeRequest =
       this.chatApi
   .sendChat(
-    CHATBOT_CONTEXT.organizationId,
-    CHATBOT_CONTEXT.chatbotId,
+    publicChatbotId(),
     {
       message,
       history,
@@ -154,8 +153,11 @@ export class App {
     ]);
   }
 
-  sourceHref(source: ChatSource): string {
-    return `/api${source.path}`;
+  showSource(source: ChatSource): void {
+    this.chatApi.source(publicChatbotId(), source.id).subscribe({
+      next: detail => this.appendMessage({ role: 'assistant', content: detail.excerpt, sources: [], fallback: false, error: false, includeInHistory: false }),
+      error: () => this.appendMessage({ role: 'assistant', content: 'This source is unavailable.', sources: [], fallback: false, error: true, includeInHistory: false }),
+    });
   }
 
   private appendMessage(

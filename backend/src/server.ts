@@ -1,3 +1,5 @@
+import { SecurityRepository } from './security/repository.js';
+import { PublicChatbotRepository } from './public/repository.js';
 import { PostgresRetrievalRepository } from './rag/repository.js';
 import { OllamaEmbeddingProvider } from './embeddings/ollama-embedding-provider.js';
 import { DocumentService } from './ingestion/document-service.js';
@@ -79,8 +81,13 @@ const chatbotService =
 const storage = new S3ObjectStorage(environment);
 const documentService = new DocumentService(chatbotService, new IngestionRepository(database),
   storage, environment.UPLOAD_MAX_BYTES, environment.INGESTION_MAX_ATTEMPTS);
+const security = new SecurityRepository(database, environment);
+const cleanup = setInterval(() => { void security.cleanup().catch(() => logger.warn({ failure: 'security_cleanup' }, 'Security cleanup failed.')); }, 60000);
+cleanup.unref();
 const app =
   createApp({
+    security, securityConfig: environment,
+    publicChatbots: new PublicChatbotRepository(database, security),
     retrievalRepository: new PostgresRetrievalRepository(database),
     ragConfig: environment,
     embeddingProvider: new OllamaEmbeddingProvider({ baseUrl: environment.OLLAMA_BASE_URL,
@@ -123,6 +130,7 @@ async function shutdown(
   }
 
   shuttingDown = true;
+  clearInterval(cleanup);
 
   logger.info(
   {

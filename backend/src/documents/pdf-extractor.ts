@@ -27,7 +27,10 @@ export async function extractPdf(
   });
 
   try {
+    const info = await parser.getInfo();
+    if (info.total > 1000) throw new Error('PDF page limit exceeded.');
     const result = await parser.getText();
+    if (result.text.length > 5_000_000) throw new Error('Document text limit exceeded.');
 
     const blocks = result.pages
       .map((page, index) => ({

@@ -19,6 +19,7 @@ async function validateDocx(filePath: string): Promise<void> {
     yauzl.open(filePath, { lazyEntries: true, autoClose: true }, (error, zip) => {
       if (error || !zip) { reject(unsupported()); return; }
       let total = 0;
+      let expanded = 0;
       const names = new Set<string>();
       let wordType = false;
       let settled = false;
@@ -31,15 +32,25 @@ async function validateDocx(filePath: string): Promise<void> {
           entry.fileName.split('/').includes('..') || entry.fileName.startsWith('/') ||
           entry.fileName.toLowerCase().endsWith('vbaproject.bin')) { fail(); return; }
         names.add(entry.fileName);
-        if (entry.fileName !== '[Content_Types].xml') { zip.readEntry(); return; }
-        if (entry.uncompressedSize > 1024 * 1024) { fail(); return; }
+        const contentTypes = entry.fileName === '[Content_Types].xml';
+        if (contentTypes && entry.uncompressedSize > 1024 * 1024) { fail(); return; }
+        // Stream every entry through bounded decompression. Central-directory sizes alone
+        // are attacker-controlled and must not authorize unbounded extraction in Mammoth.
         zip.openReadStream(entry, (streamError, stream) => {
           if (streamError || !stream) { fail(); return; }
           const parts: Buffer[] = [];
+          let entryBytes = 0;
           stream.on('error', fail);
-          stream.on('data', part => parts.push(part));
+          stream.on('data', (part: Buffer) => {
+            expanded += part.length; entryBytes += part.length;
+            if (expanded > 100 * 1024 * 1024 || entryBytes > entry.uncompressedSize ||
+                (contentTypes && entryBytes > 1024 * 1024)) { stream.destroy(); fail(); return; }
+            if (contentTypes) parts.push(part);
+          });
           stream.on('end', () => {
-            wordType = Buffer.concat(parts).toString('utf8').includes(`${MIME_TYPES.docx.replace('.document', '.document.main')}+xml`);
+            if (settled) return;
+            if (entryBytes !== entry.uncompressedSize) { fail(); return; }
+            if (contentTypes) wordType = Buffer.concat(parts).toString('utf8').includes(`${MIME_TYPES.docx.replace('.document', '.document.main')}+xml`);
             zip.readEntry();
           });
         });
@@ -55,6 +66,7 @@ async function validateDocx(filePath: string): Promise<void> {
   });
 }
 export async function validateUpload(filePath: string, originalFilename: string, maxBytes: number) {
+  if (/[\\/\u0000]/.test(originalFilename) || /^[a-z]:/i.test(originalFilename) || originalFilename.includes('..')) throw unsupported();
   const size = (await stat(filePath)).size;
   if (size > maxBytes) throw new DocumentError(413, 'UPLOAD_TOO_LARGE', 'Uploaded file exceeds the size limit.');
   if (!size) throw unsupported();

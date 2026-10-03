@@ -421,3 +421,18 @@ docker compose run --rm --no-deps \
 This requires the running Compose stack and native Ollama. It checks PDF, DOCX and scanned
 PDF ingestion, stored bytes, vector dimensions, terminal failures, manual retry and wrong-tenant
 access. It creates synthetic tenants and removes its own rows/objects afterward.
+
+## Milestones 25–26: public widget and secure administration
+
+The public customer interface now uses random `pub_…` chatbot IDs, exact allowed origins and the existing tenant-scoped PostgreSQL RAG pipeline. Existing chatbots migrate with public access **disabled**. All internal organization/chatbot/document/chat/source APIs now require a database-backed authenticated session, organization membership and CSRF protection for mutations.
+
+Start local security configuration once with `cd backend && npm run security:init`, then rebuild/start Compose. Bootstrap an owner using `npm run auth:create-owner` with password input on stdin. Enable a chatbot and set its allowed origins through authenticated APIs before embedding:
+
+```html
+<script defer src="https://CHAT_HOST/widget/v1.js"
+        data-chatbot="pub_REPLACE_WITH_PUBLIC_ID"></script>
+```
+
+The lightweight Shadow DOM widget is built inside the Docker image. The Angular demo uses public-ID/API-origin meta tags in `frontend/src/index.html`; it no longer requires organization/internal chatbot UUIDs. Origin restrictions prevent normal unauthorized browser embedding but are **not authentication**; public IDs are not secrets and shared database rate limits remain necessary.
+
+See [the combined milestone verification and operations guide](docs/milestone-25-26-verification.md) for routes, branding, owner/admin/member policy, session/CSRF design, configuration, exact-origin CORS, protected metrics, audit events, proxy setup, backup/temporary-restore commands, tests and live smoke procedures. Earlier unauthenticated API examples in the historical milestone sections require session/CSRF headers now. Public conversations remain request-time only; billing and commercial onboarding are deferred.

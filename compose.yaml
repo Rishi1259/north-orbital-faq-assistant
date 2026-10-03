@@ -61,6 +61,8 @@ services:
       dockerfile: backend/Dockerfile
       target: runtime
 
+    env_file: .env.security.local
+
     container_name: north-orbital-backend
 
     environment:
@@ -163,6 +165,7 @@ services:
       dockerfile: backend/Dockerfile
       target: worker
     init: true
+    env_file: .env.security.local
     environment:
       <<: *storage-environment
       NODE_ENV: production

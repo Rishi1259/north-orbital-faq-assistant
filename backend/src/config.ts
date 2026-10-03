@@ -1,8 +1,10 @@
+import { SecurityEnvironmentSchema, validateSecurity } from './security/config.js';
 import { RagEnvironmentSchema, validRagWeights } from './rag/config.js';
 import { z } from 'zod';
 
 const EnvironmentSchema = z.object({
   ...RagEnvironmentSchema.shape,
+  ...SecurityEnvironmentSchema.shape,
   NODE_ENV: z
     .enum([
       'development',
@@ -53,12 +55,7 @@ const EnvironmentSchema = z.object({
   OCR_COMMAND: z.string().min(1).default('ocrmypdf'),
   OCR_TIMEOUT_MS: z.coerce.number().int().positive().default(180000),
 
-  CORS_ORIGIN: z
-    .string()
-    .default(
-      'http://localhost:4200',
-    ),
-}).refine(validRagWeights, 'At least one RAG weight must be positive.').refine(v => Boolean(v.OBJECT_STORAGE_ACCESS_KEY) === Boolean(v.OBJECT_STORAGE_SECRET_KEY), { message: 'Both object storage credential fields must be configured together.' });
+}).refine(v => validateSecurity(v, v.NODE_ENV === 'production'), 'Invalid security configuration.').refine(validRagWeights, 'At least one RAG weight must be positive.').refine(v => Boolean(v.OBJECT_STORAGE_ACCESS_KEY) === Boolean(v.OBJECT_STORAGE_SECRET_KEY), { message: 'Both object storage credential fields must be configured together.' });
 
 export type Environment =
   z.infer<

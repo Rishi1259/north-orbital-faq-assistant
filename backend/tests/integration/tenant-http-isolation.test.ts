@@ -23,7 +23,7 @@ import {
 
 import {
   createApp,
-} from '../../src/app.js';
+} from '../authenticated-app.js';
 
 import {
   ChatbotRepository,

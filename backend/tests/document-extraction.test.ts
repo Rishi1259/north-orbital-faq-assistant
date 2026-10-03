@@ -89,3 +89,17 @@ describe('document extraction', () => {
     );
   });
 });
+
+it('rejects a PDF above the page limit before extracting its text', async () => {
+  const { PDFDocument } = await import('pdf-lib');
+  const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const directory = await mkdtemp(path.join(tmpdir(), 'pdf-page-limit-'));
+  try {
+    const pdf = await PDFDocument.create();
+    for (let n = 0; n < 1001; n++) pdf.addPage([10, 10]);
+    const filename = path.join(directory, 'oversized.pdf');
+    await writeFile(filename, await pdf.save());
+    await expect(extractPdf(filename, 'test')).rejects.toThrow('PDF page limit exceeded.');
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

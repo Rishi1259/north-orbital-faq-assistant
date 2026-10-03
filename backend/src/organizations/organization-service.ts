@@ -14,7 +14,7 @@ import {
 const OrganizationIdSchema =
   z.uuid();
 
-const CreateOrganizationSchema =
+export const CreateOrganizationSchema =
   z.object({
     name:
       z

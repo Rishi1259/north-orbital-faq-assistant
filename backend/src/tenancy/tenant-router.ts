@@ -1,3 +1,5 @@
+import type { SecurityStore } from '../security/repository.js';
+import { auditContext } from '../security/http.js';
 import {
   Router,
   type Response,
@@ -29,6 +31,7 @@ import type {
 } from '../organizations/organization-service.js';
 
 interface TenantRouterOptions {
+  security?: SecurityStore;
   organizationService: OrganizationService;
   chatbotService: ChatbotService;
 }
@@ -87,7 +90,7 @@ function sendError(
   }
 
   logger.error(
-    { err: error },
+    { failure: 'tenant_api' },
     'Unhandled tenant API error',
   );
 
@@ -173,6 +176,8 @@ export function createTenantRouter(
               request.body,
             );
 
+        if (options.security) await options.security.audit({ ...auditContext(request, response, 'chatbot.created', 'chatbot'),
+          organizationId: request.params.organizationId, chatbotId: chatbot.id, targetId: chatbot.id });
         response.status(201).json({
           chatbot,
         });

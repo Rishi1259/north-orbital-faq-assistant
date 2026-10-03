@@ -28,3 +28,7 @@ documents/private/*
 
 documents/generated/*
 !documents/generated/.gitkeep
+
+# Private disaster recovery artifacts
+backups/
+backend/widget/

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import request from 'supertest';
 import { beforeEach, expect, it, vi } from 'vitest';
-import { createApp } from '../src/app.js';
+import { createApp } from './authenticated-app.js';
 import { ChatbotNotFoundError } from '../src/chatbots/errors.js';
 import { DocumentService } from '../src/ingestion/document-service.js';
 import { DocumentError } from '../src/ingestion/errors.js';
@@ -55,7 +55,7 @@ it('rejects unsupported, oversized, absent and unexpected file fields', async ()
   expect(storage.put).not.toHaveBeenCalled();
 });
 it('checks tenant ownership before handling uploaded files', async () => {
-  const response = await request(app()).post(base.replace(org, randomUUID())).attach('file', pdf);
+  const response = await request(app()).post(base.replace(org, randomUUID())).set('Content-Type', 'multipart/form-data; boundary=fixture').send('--fixture--');
   expect(response.status).toBe(404); expect(storage.put).not.toHaveBeenCalled(); expect(repository.create).not.toHaveBeenCalled();
 });
 it('lists and gets only owned documents, with pagination and UUID validation', async () => {

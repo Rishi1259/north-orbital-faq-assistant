@@ -13,7 +13,7 @@ import {
 
 import {
   createApp,
-} from '../src/app.js';
+} from './authenticated-app.js';
 
 import {
   ChatbotNotFoundError,
@@ -132,9 +132,9 @@ describe(
         ).toBe(400);
 
         expect(
-          response.body.error,
+          response.body.error.code,
         ).toBe(
-          'invalid_request',
+          'INVALID_REQUEST',
         );
       },
     );

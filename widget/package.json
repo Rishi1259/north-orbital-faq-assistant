@@ -1,0 +1,18 @@
+{
+  "name": "north-orbital-widget",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && esbuild src/entry.ts --bundle --minify --format=iife --target=es2020 --outfile=dist/v1.js",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.0.0",
+    "rolldown": "1.2.11",
+    "typescript": "~6.0.2",
+    "vite": "8.3.1",
+    "vitest": "5.0.2"
+  }
+}
