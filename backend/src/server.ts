@@ -1,3 +1,6 @@
+import { SourceService } from './sources/service.js';
+import { CommercialService } from './commercial/service.js';
+import { CommercialDocuments } from './commercial/documents.js';
 import { SecurityRepository } from './security/repository.js';
 import { PublicChatbotRepository } from './public/repository.js';
 import { PostgresRetrievalRepository } from './rag/repository.js';
@@ -79,14 +82,16 @@ const chatbotService =
     chatbotRepository,
   );
 const storage = new S3ObjectStorage(environment);
+const commercial = new CommercialService(database);
 const documentService = new DocumentService(chatbotService, new IngestionRepository(database),
-  storage, environment.UPLOAD_MAX_BYTES, environment.INGESTION_MAX_ATTEMPTS);
+  storage, environment.UPLOAD_MAX_BYTES, environment.INGESTION_MAX_ATTEMPTS, new CommercialDocuments(commercial));
 const security = new SecurityRepository(database, environment);
 const cleanup = setInterval(() => { void security.cleanup().catch(() => logger.warn({ failure: 'security_cleanup' }, 'Security cleanup failed.')); }, 60000);
 cleanup.unref();
 const app =
   createApp({
-    security, securityConfig: environment,
+    commercial, security, securityConfig: environment,
+    sourceService: new SourceService(commercial,new OllamaEmbeddingProvider({baseUrl:environment.OLLAMA_BASE_URL,model:environment.OLLAMA_EMBEDDING_MODEL,timeoutMs:environment.EMBEDDING_TIMEOUT_MS}),environment),
     publicChatbots: new PublicChatbotRepository(database, security),
     retrievalRepository: new PostgresRetrievalRepository(database),
     ragConfig: environment,

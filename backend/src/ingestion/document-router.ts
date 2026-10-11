@@ -1,3 +1,4 @@
+import { HttpError } from '../security/errors.js';
 import type { SecurityStore } from '../security/repository.js';
 import { auditContext } from '../security/http.js';
 import { MIME_TYPES } from './upload-validation.js';
@@ -17,6 +18,7 @@ function scope(request: Request) {
 }
 function documentScope(request: Request) { return { ...scope(request), documentId: z.uuid().parse(request.params.documentId) }; }
 function sendError(response: Response, error: unknown) {
+  if (error instanceof HttpError) { response.status(error.status).json({error:{code:error.code,message:error.message}}); return; }
   let failure = new DocumentError(500, 'INTERNAL_ERROR', 'Document request could not be completed.');
   if (error instanceof DocumentError) failure = error;
   else if (error instanceof ChatbotNotFoundError) failure = new DocumentError(404, 'DOCUMENT_NOT_FOUND', 'Document or chatbot not found.');

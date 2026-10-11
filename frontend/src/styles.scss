@@ -19,3 +19,11 @@ button,
 textarea {
   font-family: inherit;
 }
+
+:root { --admin-text:#172033; --admin-muted:#eef4ff; --admin-primary:#2457a7; --admin-danger:#a51d32; --admin-border:#c5cdd9; --scrollbar-thumb:#6b788b; --scrollbar-track:#eef2f7; }
+* { scrollbar-color:var(--scrollbar-thumb) var(--scrollbar-track); scrollbar-width:auto; }
+::-webkit-scrollbar { width:12px; height:12px; }
+::-webkit-scrollbar-track { background:var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background:var(--scrollbar-thumb); border:2px solid var(--scrollbar-track); border-radius:6px; }
+::-webkit-scrollbar-thumb:hover, ::-webkit-scrollbar-thumb:active { background:var(--admin-text); }
+@media (forced-colors:active) { * { scrollbar-color:auto; } }

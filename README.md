@@ -435,4 +435,16 @@ Start local security configuration once with `cd backend && npm run security:ini
 
 The lightweight Shadow DOM widget is built inside the Docker image. The Angular demo uses public-ID/API-origin meta tags in `frontend/src/index.html`; it no longer requires organization/internal chatbot UUIDs. Origin restrictions prevent normal unauthorized browser embedding but are **not authentication**; public IDs are not secrets and shared database rate limits remain necessary.
 
-See [the combined milestone verification and operations guide](docs/milestone-25-26-verification.md) for routes, branding, owner/admin/member policy, session/CSRF design, configuration, exact-origin CORS, protected metrics, audit events, proxy setup, backup/temporary-restore commands, tests and live smoke procedures. Earlier unauthenticated API examples in the historical milestone sections require session/CSRF headers now. Public conversations remain request-time only; billing and commercial onboarding are deferred.
+See [the combined milestone verification and operations guide](docs/milestone-25-26-verification.md) for routes, branding, owner/admin/member policy, session/CSRF design, configuration, exact-origin CORS, protected metrics, audit events, proxy setup, backup/temporary-restore commands, tests and live smoke procedures. Earlier unauthenticated API examples in the historical milestone sections require session/CSRF headers now. Public conversations remain request-time only. M27 adds provider-independent commercial foundations; payment-provider integration remains deferred to M37.
+
+
+## Milestone 27: commercial SaaS foundation
+
+Plans, organization subscriptions, shared public/internal message quotas, resource quotas, PostgreSQL usage, organization API keys, owner metadata export and durable document/object deletion are implemented. The Angular “Organization account” panel shows plan/status, usage, onboarding and API-key management. Existing organizations receive Beta; existing data is preserved. No owner-accessible plan upgrade endpoint or payment provider is added.
+
+Apply `1791300000000_commercial-saas-foundation.js` before starting the backend/worker. See [the seven acceptance gates and verification results](docs/milestone-27-verification.md), [production/Azure and account-deletion runbooks](docs/production-azure.md), and [the production environment template](.env.production.example). Local backend/PostgreSQL host ports remain 3001/55432.
+
+
+### Milestone 28: website and FAQ knowledge
+
+Organization account → Manage knowledge sources selects a chatbot and manages public website sources, manual/daily/weekly sync, and manual FAQ entries. The existing upload/RAG/widget APIs remain compatible. Website and FAQ evidence uses the same tenant-scoped FTS/pgvector/RRF pipeline and validated citation endpoints. See [M28 verification](docs/milestone-28-verification.md) for API routes, limits, security policy, quotas and executed results, and [Azure operations](docs/production-azure.md) for egress and worker deployment requirements.

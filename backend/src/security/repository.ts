@@ -1,3 +1,5 @@
+import { CommercialService } from '../commercial/service.js';
+import { QuotaError } from '../commercial/model.js';
 import { createHmac } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { z } from 'zod';
@@ -45,11 +47,18 @@ export class SecurityRepository {
         if (!user || !await verifyPassword(user.password_hash, password)) throw new HttpError(409, 'ACCOUNT_EXISTS', 'Existing account password must match.');
         userId = user.id;
       }
+      const commercial = new CommercialService(this.database);
+      const {subscription,plan} = await commercial.locked(db,organizationId);
+      if (!(await db.query('SELECT 1 FROM organization_memberships WHERE organization_id=$1 AND user_id=$2',[organizationId,userId])).rowCount)
+        await commercial.checkResource(db,organizationId,subscription,plan,'members');
       await db.query(`INSERT INTO organization_memberships(organization_id,user_id,role) VALUES($1,$2,'owner')
         ON CONFLICT (organization_id,user_id) DO UPDATE SET role='owner'`, [organizationId, userId]);
       await appendAudit(db, { action: 'membership.owner_bootstrapped', targetType: 'user', targetId: userId,
         actorUserId: userId, organizationId, metadata: { role: 'owner' } });
       return { id: userId!, email };
+    }).catch(async error => {
+      if (error instanceof QuotaError) await this.audit({organizationId,action: "quota.exceeded",targetType: "organization"});
+      throw error;
     });
   }
   async login(email: string, password: string, requestId: string) {

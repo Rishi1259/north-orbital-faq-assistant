@@ -1,3 +1,5 @@
+import { CommercialDocuments } from '../commercial/documents.js';
+import { CommercialService } from '../commercial/service.js';
 import type { Pool, PoolClient } from 'pg';
 import { DocumentError, IngestionError, LeaseLostError, safeProcessingError } from './errors.js';
 import { jobScope, type DocumentScope, type IngestionJob, type NewDocument,
@@ -17,6 +19,7 @@ export function failureState(attempts: number, maxAttempts: number) {
 
 export class IngestionRepository {
   constructor(private readonly pool: Pool) {}
+  commercialDocuments() { return new CommercialDocuments(new CommercialService(this.pool)); }
   private async transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
     const client = await this.pool.connect();
     try {
@@ -29,18 +32,22 @@ export class IngestionRepository {
       throw error;
     } finally { client.release(); }
   }
-  private async enqueue(client: PoolClient, scope: DocumentScope, maxAttempts: number) {
+  private async enqueue(client: Pick<PoolClient, 'query'>, scope: DocumentScope, maxAttempts: number) {
     await client.query(`INSERT INTO document_ingestion_jobs
       (organization_id, chatbot_id, document_id, max_attempts) VALUES ($1, $2, $3, $4)`,
     [...scopeValues(scope), maxAttempts]);
   }
   async create(input: NewDocument): Promise<StoredDocument> {
-    return this.transaction(async client => {
+    const commercial = new CommercialService(this.pool);
+    return commercial.run(input.organizationId,async (client,{subscription,plan}) => {
+      await commercial.checkResource(client,input.organizationId,subscription,plan,'documents',input.size);
       const result = await client.query<StoredDocument>(`INSERT INTO documents
         (organization_id, chatbot_id, id, title, original_filename, mime_type, storage_key, checksum_sha256, size_bytes)
         VALUES ($1,$2,$3,$4,$4,$5,$6,$7,$8) RETURNING *`,
       [...scopeValues(input), input.filename, input.mimeType, input.storageKey, input.checksum, input.size]);
       await this.enqueue(client, input, input.maxAttempts);
+      await commercial.meter(client,subscription,'documents_created');
+      await commercial.meter(client,subscription,'storage_bytes',input.size);
       return result.rows[0];
     });
   }
@@ -120,6 +127,8 @@ export class IngestionRepository {
       throw new IngestionError('embedding');
     }
     await this.transaction(async client => {
+      const commercial = new CommercialService(this.pool);
+      const {subscription} = await commercial.locked(client,job.organization_id);
       await this.assertLease(client, job);
       const scope = scopeValues(jobScope(job));
       await client.query(`DELETE FROM document_chunks WHERE organization_id=$1 AND chatbot_id=$2 AND document_id=$3`, scope);
@@ -136,6 +145,7 @@ export class IngestionRepository {
       await client.query(`UPDATE documents SET status='ready', error_message=NULL, processed_at=now(),
         ocr_used=$4, page_count=$5, chunk_count=$6, updated_at=now() WHERE ${scopeWhere}`,
       [...scope, result.ocrUsed, result.pageCount, result.chunks.length]);
+      if (result.pageCount !== null) await commercial.meter(client,subscription,'ingestion_pages',result.pageCount);
       await client.query(`UPDATE document_ingestion_jobs SET status='succeeded', completed_at=now(),
         last_error=NULL, locked_at=NULL, locked_by=NULL, updated_at=now() WHERE ${jobWhere}`, leaseValues(job));
     });

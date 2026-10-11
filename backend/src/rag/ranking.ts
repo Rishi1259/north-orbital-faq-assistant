@@ -47,7 +47,7 @@ export function selectEvidence(ranked: RankedCandidate[], config: RagConfig): Se
       [...grams].filter(g => old.shingles.has(g)).length / grams.size >= 0.85))) continue;
     const sourceId = `S${selected.length + 1}`;
     // JSON encoding makes document-supplied delimiters unambiguous. Entire block counts toward budget.
-    const encode = (content: string) => JSON.stringify({ sourceId, title: chunk.title.slice(0, 300),
+    const encode = (content: string) => JSON.stringify({ sourceId, sourceType:chunk.sourceType??'document', title: chunk.title.slice(0, 300),
       page: chunk.page, section: chunk.section?.slice(0, 200) ?? null, content });
     const remaining = config.RAG_MAX_CONTEXT_CHARS - used - (selected.length ? 1 : 0);
     let content = chunk.text;

@@ -3,6 +3,7 @@ export type { TenantScope } from '../ingestion/types.js';
 
 export interface EvidenceChunk extends TenantScope {
   id: string;
+  sourceType?: 'document'|'website'|'manual_faq'; sourceId?: string; pageId?: string|null; canonicalUrl?: string|null;
   documentId: string;
   title: string;
   chunkIndex: number;

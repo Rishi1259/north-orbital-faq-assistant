@@ -9,7 +9,9 @@ for (const name of ['.env.security.local','.env.smoke.local']) {
   try { const values=parse(await readFile(new URL(`../../${name}`,import.meta.url))); privateValues.push(...Object.entries(values).filter(([k])=>/SECRET|TOKEN|PASSWORD/.test(k)).map(([,v])=>v)); } catch {}
 }
 const checks={
+  apiKeySecrets: /no_live_[A-Za-z0-9_-]{43}/g,
   documentContent: /Volunteers should cancel|12 hours|Princess Donut|ACKNOWLEDGEMENTS/g,
+  websiteFaqContent: /The Atlas observatory tour begins|Cancel lunar workshop bookings/g,
   credentialFields: /"(?:authorization|cookie|set-cookie|password|csrfToken|sessionToken|OBJECT_STORAGE_SECRET_KEY|OBJECT_STORAGE_ACCESS_KEY)"\s*:/gi,
   vectors: /\[\s*-?\d+\.\d+(?:\s*,\s*-?\d+\.\d+){15,}/g,
 };

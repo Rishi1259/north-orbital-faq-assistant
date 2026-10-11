@@ -1,3 +1,4 @@
+import { Account } from './account';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
@@ -29,10 +30,12 @@ interface UiMessage extends ChatMessage {
 
 @Component({
   selector: 'app-root',
+  imports: [Account],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
+  readonly showAccount = signal(false);
   private readonly chatApi = inject(ChatApiService);
 
   private nextMessageId = 1;
@@ -189,6 +192,12 @@ export class App {
 
         case 'INVALID_REQUEST':
           return 'That message could not be processed. Please shorten or rephrase it and try again.';
+
+        case 'QUOTA_EXCEEDED':
+          return 'This organization has reached its plan message allowance.';
+
+        case 'SUBSCRIPTION_INACTIVE':
+          return 'Chat is unavailable for this organization’s current subscription.';
 
         case 'RATE_LIMITED':
           return 'There have been too many requests in a short period. Please try again shortly.';

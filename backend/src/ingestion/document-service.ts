@@ -1,10 +1,11 @@
+import type { CommercialDocuments } from '../commercial/documents.js';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { ChatbotService } from '../chatbots/chatbot-service.js';
 import { storageKey, type ObjectStorage } from '../storage/object-storage.js';
 import { logger } from '../logging/logger.js';
 import { DocumentError } from './errors.js';
-import type { IngestionRepository } from './repository.js';
+import { IngestionRepository } from './repository.js';
 import { metadata, type DocumentScope, type TenantScope } from './types.js';
 import { validateUpload } from './upload-validation.js';
 
@@ -12,7 +13,9 @@ export class DocumentService {
   constructor(private readonly chatbots: Pick<ChatbotService, 'getById'>,
     private readonly repository: Pick<IngestionRepository, 'create' | 'get' | 'list' | 'retry'>,
     private readonly storage: ObjectStorage, private readonly maxBytes: number,
-    private readonly maxAttempts: number) {}
+    private readonly maxAttempts: number, private readonly commercial?: CommercialDocuments) {
+      this.commercial ??= repository instanceof IngestionRepository ? repository.commercialDocuments() : undefined;
+    }
   async assertTenant(scope: TenantScope) {
     z.uuid().parse(scope.organizationId); z.uuid().parse(scope.chatbotId);
     await this.chatbots.getById(scope.organizationId, scope.chatbotId);
@@ -22,6 +25,7 @@ export class DocumentService {
     const upload = await validateUpload(filePath, filename, this.maxBytes);
     if (claimedMime && claimedMime !== 'application/octet-stream' && claimedMime !== upload.mimeType) throw new DocumentError(415, 'UNSUPPORTED_FILE', 'File MIME type does not match its signature.');
     const object = { ...scope, documentId: randomUUID(), format: upload.format };
+    if (this.commercial) return metadata(await this.commercial.upload({...object,...upload,storageKey:storageKey(object),maxAttempts:this.maxAttempts},this.storage,filePath));
     try {
       await this.storage.put(object, filePath, upload.mimeType);
       return metadata(await this.repository.create({ ...object, ...upload,

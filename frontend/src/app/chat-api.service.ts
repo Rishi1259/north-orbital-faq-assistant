@@ -10,7 +10,8 @@ export interface ChatMessage {
 
 export interface ChatSource {
   id: string;
-  kind: 'faq' | 'document';
+  kind: 'faq' | 'document' | 'website' | 'manual_faq';
+  sourceId?: string; pageId?: string | null; canonicalUrl?: string | null;
   title: string;
   path: string;
   location?: string;

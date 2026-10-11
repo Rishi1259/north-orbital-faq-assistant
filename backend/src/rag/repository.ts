@@ -2,12 +2,10 @@ import type { Pool } from 'pg';
 import type { Candidate, EmbeddingIdentity, EvidenceChunk, RetrievalRepository, TenantScope } from './types.js';
 
 const columns = `c.id, c.organization_id AS "organizationId", c.chatbot_id AS "chatbotId",
-  c.document_id AS "documentId", d.title, c.chunk_index AS "chunkIndex",
-  c.page_number AS page, c.section, c.content AS text`;
-const readyChunks = `FROM document_chunks c JOIN documents d
-  ON d.id=c.document_id AND d.organization_id=c.organization_id AND d.chatbot_id=c.chatbot_id`;
-const scopeFilter = `c.organization_id=$1 AND c.chatbot_id=$2
-  AND d.organization_id=$1 AND d.chatbot_id=$2 AND d.status='ready'`;
+  c.document_id AS "documentId", c.title, c.chunk_index AS "chunkIndex",
+  c.page_number AS page, c.section, c.content AS text, c.source_type AS "sourceType", c.source_id AS "sourceId", c.page_id AS "pageId", c.canonical_url AS "canonicalUrl"`;
+const readyChunks = `FROM ready_knowledge_chunks c`;
+const scopeFilter = `c.organization_id=$1 AND c.chatbot_id=$2`;
 const limitCandidates = (limit: number) => {
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error('Invalid retrieval limit.');
   return limit;
@@ -44,7 +42,7 @@ export class PostgresRetrievalRepository implements RetrievalRepository {
     // Materialize a bounded nearest-neighbor set; apply stable tie-breaking in SQL.
     const result = await this.database.query<Candidate>(`WITH nearest AS MATERIALIZED (
       SELECT ${columns}, (e.embedding <=> $3::vector(1024)) AS "semanticDistance"
-      ${readyChunks} JOIN document_embeddings e ON e.chunk_id=c.id AND e.document_id=c.document_id
+      ${readyChunks} JOIN knowledge_vectors e ON e.chunk_id=c.id AND e.document_id=c.document_id
         AND e.organization_id=c.organization_id AND e.chatbot_id=c.chatbot_id
       WHERE ${scopeFilter} AND e.organization_id=$1 AND e.chatbot_id=$2
         AND e.provider=$4 AND e.model=$5 AND e.dimensions=$6

@@ -1,3 +1,7 @@
+import type { SourceService } from './sources/service.js';
+import { sourceRouter } from './sources/router.js';
+import type { CommercialService } from './commercial/service.js';
+import { commercialRouter, apiRouter } from './commercial/router.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadSecurityConfig, type SecurityConfig } from './security/config.js';
@@ -77,6 +81,8 @@ import {
 } from './chatbots/errors.js';
 
 export interface AppOptions {
+  sourceService?: SourceService;
+  commercial?: CommercialService;
   security?: SecurityStore;
   securityConfig?: SecurityConfig;
   publicChatbots?: PublicChatbotRepository;
@@ -108,7 +114,7 @@ export function createApp(
   const securityConfig = options.securityConfig ?? loadSecurityConfig();
   app.set('trust proxy', securityConfig.TRUST_PROXY_HOPS);
   app.disable('x-powered-by');
-  const metrics = createMetrics(securityConfig);
+  const metrics = createMetrics(securityConfig,options.commercial?.pool);
   app.use(metrics.middleware);
 
   app.use(
@@ -142,7 +148,7 @@ export function createApp(
   // Admin CORS is entirely separate from customer widget CORS.
   const adminCors = cors({ origin: securityConfig.ADMIN_APP_ORIGIN, credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'X-CSRF-Token'] });
-  app.use(['/api/auth', '/api/organizations', '/api/sources', '/api/document-sources', '/api/chat'], adminCors);
+  app.use(['/api/auth', '/api/plans', '/api/account', '/api/organizations', '/api/sources', '/api/document-sources', '/api/chat'], adminCors);
   app.use('/api/public', (_req, res, next) => { res.vary('Origin'); res.set('Cache-Control', 'no-store'); next(); });
   app.get('/widget/v1.js', (_req, res) => {
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -174,12 +180,16 @@ export function createApp(
 
   app.use('/api/auth', authRouter(options.security, securityConfig, metrics));
   if (options.publicChatbots && options.security) app.use('/api/public',
-    publicRouter(options.publicChatbots, options.security, securityConfig, chatService, repository, metrics));
+    publicRouter(options.publicChatbots, options.security, securityConfig, chatService, repository, metrics, options.commercial));
+
+  if (options.commercial && options.security) app.use('/api/v1',apiRouter(options.commercial,options.security,metrics,chatService));
 
   // Fail closed even when services are absent. All legacy/internal namespaces require a session.
-  app.use(['/api/organizations', '/api/sources', '/api/document-sources', '/api/chat'], authentication(options.security, securityConfig));
+  app.use(['/api/plans', '/api/account', '/api/organizations', '/api/sources', '/api/document-sources', '/api/chat'], authentication(options.security, securityConfig));
   app.use('/api/organizations/:organizationId', tenantAuthorization(options.security, securityConfig, metrics));
   app.post('/api/organizations', organizationCreation(options.security));
+  if (options.sourceService && options.security) app.use('/api',sourceRouter(options.sourceService,options.security,metrics));
+  if (options.commercial && options.security) app.use('/api',commercialRouter(options.commercial,options.security,metrics));
   if (options.publicChatbots && options.security) app.use('/api', publicAdminRouter(options.publicChatbots, options.security));
 
   app.get(
@@ -223,7 +233,7 @@ export function createApp(
       const [chunk] = await repository.getByIds({ organizationId, chatbotId }, [chunkId]);
       if (!chunk) { response.status(404).json({ error: { code: 'DOCUMENT_SOURCE_NOT_FOUND', message: 'Document source not found.' } }); return; }
       response.json({ id: chunk.id, documentId: chunk.documentId, title: chunk.title,
-        page: chunk.page, section: chunk.section, excerpt: chunk.text });
+        page: chunk.page, section: chunk.section, excerpt: chunk.text.slice(0,1500), sourceType: chunk.sourceType??'document', sourceId: chunk.sourceId??chunk.documentId, pageId: chunk.pageId??null, canonicalUrl: chunk.canonicalUrl??null });
     } catch (error) {
       if (error instanceof ChatbotNotFoundError) {
         response.status(404).json({ error: { code: 'CHATBOT_NOT_FOUND', message: 'Chatbot not found.' } }); return;
@@ -402,6 +412,7 @@ if (
         );
 
       if (!chatService) throw new Error('Production retrieval is not configured.');
+      await options.commercial?.consumeMessage(String(request.params.organizationId),'internal_chat_messages');
       const result =
         await chatService!.chat(
           { organizationId: String(request.params.organizationId), chatbotId: String(request.params.chatbotId) },
@@ -410,6 +421,7 @@ if (
 
       response.json(result);
     } catch (error) {
+      if (error instanceof HttpError) { response.status(error.status).json({error:{code:error.code,message:error.message}}); return; }
       if (
         error instanceof
         ChatbotNotFoundError

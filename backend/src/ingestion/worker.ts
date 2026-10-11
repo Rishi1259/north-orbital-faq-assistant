@@ -1,3 +1,7 @@
+import { SourceService } from '../sources/service.js';
+import { CrawlJobs } from '../sources/jobs.js';
+import { CommercialService } from '../commercial/service.js';
+import { CommercialDocuments } from '../commercial/documents.js';
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -17,17 +21,31 @@ async function main() {
   pool.on('error', () => logger.error('Worker database connection failed.'));
   const repository = new IngestionRepository(pool);
   const storage = new S3ObjectStorage(config);
+  const commercialDocuments = new CommercialDocuments(new CommercialService(pool));
   const embeddings = new OllamaEmbeddingProvider({ baseUrl: config.OLLAMA_BASE_URL,
     model: config.OLLAMA_EMBEDDING_MODEL, timeoutMs: config.EMBEDDING_TIMEOUT_MS });
   const ocr = config.OCR_ENABLED ? new CommandOcrProvider(config.OCR_COMMAND, config.OCR_TIMEOUT_MS) : undefined;
+  const crawlJobs = new CrawlJobs(new SourceService(new CommercialService(pool),embeddings,config));
   const workerId = randomUUID();
   const shutdown = new AbortController();
   const stop = () => { shutdown.abort(); logger.info({ workerId }, 'Worker stopping after current job.'); };
   process.once('SIGTERM', stop); process.once('SIGINT', stop);
   logger.info({ workerId }, 'Ingestion worker started.');
+  const crawlLoop = async () => {
+    while (!shutdown.signal.aborted) {
+      try {
+        await crawlJobs.recover(); await crawlJobs.schedule(); await crawlJobs.prune();
+        const job = await crawlJobs.claim();
+        if(job) { await crawlJobs.process(job); continue; }
+      } catch { logger.error({workerId,failure:'crawl_queue'},'Crawl queue polling failed.'); }
+      await delay(config.INGESTION_POLL_INTERVAL_MS,undefined,{signal:shutdown.signal}).catch(()=>{});
+    }
+  };
+  const crawling = crawlLoop();
   try {
     while (!shutdown.signal.aborted) {
       try {
+        await commercialDocuments.cleanupOne(storage);
         const recovered = await repository.recoverStale(config.INGESTION_STALE_AFTER_MS);
         if (recovered) logger.info({ workerId, count: recovered }, 'Recovered stale ingestion jobs.');
         if (shutdown.signal.aborted) break;
@@ -42,7 +60,7 @@ async function main() {
       await delay(config.INGESTION_POLL_INTERVAL_MS, undefined, { signal: shutdown.signal }).catch(() => {});
     }
   } finally {
-    storage.close(); await pool.end();
+    shutdown.abort(); await crawling; storage.close(); await pool.end();
     process.removeListener('SIGTERM', stop); process.removeListener('SIGINT', stop);
   }
 }

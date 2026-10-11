@@ -1,8 +1,10 @@
+import { CrawlerEnvironmentSchema } from './sources/config.js';
 import { SecurityEnvironmentSchema, validateSecurity } from './security/config.js';
 import { RagEnvironmentSchema, validRagWeights } from './rag/config.js';
 import { z } from 'zod';
 
 const EnvironmentSchema = z.object({
+  ...CrawlerEnvironmentSchema.shape,
   ...RagEnvironmentSchema.shape,
   ...SecurityEnvironmentSchema.shape,
   NODE_ENV: z

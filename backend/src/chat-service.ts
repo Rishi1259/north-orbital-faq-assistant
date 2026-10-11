@@ -88,7 +88,8 @@ export interface PublicSource {
 
   kind:
     | 'faq'
-    | 'document';
+    | 'document' | 'website' | 'manual_faq';
+  sourceId?: string; pageId?: string|null; canonicalUrl?: string|null;
 
   title: string;
 

@@ -1,3 +1,4 @@
+import { CommercialService } from '../commercial/service.js';
 import type {
   Pool,
 } from 'pg';
@@ -48,8 +49,11 @@ export class ChatbotRepository {
   async create(
     input: CreateChatbotInput,
   ): Promise<Chatbot> {
+    const commercial = new CommercialService(this.database);
+    return commercial.run(input.organizationId, async (db, {subscription,plan}) => {
+    await commercial.checkResource(db,input.organizationId,subscription,plan,'chatbots');
     const result =
-      await this.database.query<ChatbotRow>(
+      await db.query<ChatbotRow>(
         `
           INSERT INTO chatbots (
             organization_id,
@@ -73,6 +77,7 @@ export class ChatbotRepository {
     return mapChatbot(
       result.rows[0],
     );
+    });
   }
 
   async findById(

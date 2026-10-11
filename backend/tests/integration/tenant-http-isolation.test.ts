@@ -1,3 +1,4 @@
+import { transactionPool } from '../transaction-pool.js';
 import { PostgresRetrievalRepository } from '../../src/rag/repository.js';
 import 'dotenv/config';
 
@@ -87,12 +88,7 @@ describe(
     it(
       'allows the owning organization and rejects another organization',
       async () => {
-        const database = {
-          query:
-            client.query.bind(
-              client,
-            ),
-        } as Pool;
+        const database = transactionPool(client);
 
         const organizationRepository =
           new OrganizationRepository(

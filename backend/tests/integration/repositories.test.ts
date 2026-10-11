@@ -1,3 +1,4 @@
+import { transactionPool } from '../transaction-pool.js';
 import 'dotenv/config';
 
 import {
@@ -71,12 +72,7 @@ describe(
     it(
       'creates and retrieves tenant-scoped chatbots',
       async () => {
-        const database = {
-          query:
-            client.query.bind(
-              client,
-            ),
-        } as Pool;
+        const database = transactionPool(client);
 
         const organizations =
           new OrganizationRepository(

@@ -10,6 +10,26 @@ x-storage-environment: &storage-environment
   UPLOAD_MAX_BYTES: 20971520
   INGESTION_MAX_ATTEMPTS: 3
 
+x-crawler-environment: &crawler-environment
+  CRAWLER_MAX_PAGES_PER_SOURCE: ${CRAWLER_MAX_PAGES_PER_SOURCE:-50}
+  CRAWLER_MAX_DEPTH: ${CRAWLER_MAX_DEPTH:-3}
+  CRAWLER_MAX_LINKS_PER_PAGE: ${CRAWLER_MAX_LINKS_PER_PAGE:-100}
+  CRAWLER_MAX_RESPONSE_BYTES: ${CRAWLER_MAX_RESPONSE_BYTES:-1048576}
+  CRAWLER_MAX_TOTAL_BYTES: ${CRAWLER_MAX_TOTAL_BYTES:-20971520}
+  CRAWLER_MAX_SITEMAP_BYTES: ${CRAWLER_MAX_SITEMAP_BYTES:-1048576}
+  CRAWLER_MAX_SITEMAP_URLS: ${CRAWLER_MAX_SITEMAP_URLS:-500}
+  CRAWLER_MAX_SITEMAP_DOCUMENTS: ${CRAWLER_MAX_SITEMAP_DOCUMENTS:-10}
+  CRAWLER_MAX_SITEMAP_DEPTH: ${CRAWLER_MAX_SITEMAP_DEPTH:-2}
+  CRAWLER_REQUEST_TIMEOUT_MS: ${CRAWLER_REQUEST_TIMEOUT_MS:-10000}
+  CRAWLER_TOTAL_TIMEOUT_MS: ${CRAWLER_TOTAL_TIMEOUT_MS:-120000}
+  CRAWLER_MAX_REDIRECTS: ${CRAWLER_MAX_REDIRECTS:-5}
+  CRAWLER_MAX_ATTEMPTS: ${CRAWLER_MAX_ATTEMPTS:-3}
+  CRAWLER_REQUEST_DELAY_MS: ${CRAWLER_REQUEST_DELAY_MS:-100}
+  CRAWLER_MAX_CHUNKS_PER_PAGE: ${CRAWLER_MAX_CHUNKS_PER_PAGE:-30}
+  CRAWLER_MAX_CHUNKS_PER_SOURCE: ${CRAWLER_MAX_CHUNKS_PER_SOURCE:-1500}
+  CRAWLER_MAX_CHUNKS_PER_RUN: ${CRAWLER_MAX_CHUNKS_PER_RUN:-500}
+  CRAWLER_USER_AGENT: ${CRAWLER_USER_AGENT:-NorthOrbitalKnowledgeCrawler/1.0}
+
 services:
   postgres:
     image: pgvector/pgvector:pg17
@@ -66,7 +86,7 @@ services:
     container_name: north-orbital-backend
 
     environment:
-      <<: *storage-environment
+      <<: [*storage-environment, *crawler-environment]
       NODE_ENV: production
       PORT: 3000
 
@@ -147,7 +167,7 @@ services:
       dockerfile: docker/minio.Dockerfile
       target: mc
     environment:
-      <<: *storage-environment
+      <<: [*storage-environment, *crawler-environment]
     entrypoint: ["/bin/sh", "-c"]
     command:
       - >-
@@ -167,7 +187,7 @@ services:
     init: true
     env_file: .env.security.local
     environment:
-      <<: *storage-environment
+      <<: [*storage-environment, *crawler-environment]
       NODE_ENV: production
       DATABASE_URL: postgresql://north_orbital:north_orbital_dev@postgres:5432/north_orbital
       DATABASE_POOL_MAX: 5

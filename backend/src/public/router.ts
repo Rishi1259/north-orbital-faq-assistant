@@ -1,3 +1,4 @@
+import type { CommercialService } from '../commercial/service.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { ChatRequestSchema } from '../ai/types.js';
@@ -11,7 +12,7 @@ import type { Metrics } from '../operations/metrics.js';
 import { publicConfig, type PublicChatbot, type PublicChatbotRepository } from './repository.js';
 
 export function publicRouter(bots: PublicChatbotRepository, security: SecurityStore, config: SecurityConfig,
-  chat: ProductionChatService | undefined, sources: RetrievalRepository | undefined, metrics: Metrics) {
+  chat: ProductionChatService | undefined, sources: RetrievalRepository | undefined, metrics: Metrics, commercial?: CommercialService) {
   const router = Router();
   router.use('/chatbots/:publicId', async (req, res, next) => {
     res.vary('Origin'); res.set('Cache-Control', 'no-store');
@@ -33,6 +34,7 @@ export function publicRouter(bots: PublicChatbotRepository, security: SecuritySt
     await enforceLimit(security, res, metrics, 'public-chat', [bot.publicId, req.ip ?? 'unknown'], config.PUBLIC_CHAT_RATE_LIMIT, config.PUBLIC_CHAT_RATE_WINDOW_SECONDS);
     const input = ChatRequestSchema.parse(req.body);
     if (!chat) throw new HttpError(503, 'UNAVAILABLE', 'Chat is temporarily unavailable.');
+    await commercial?.consumeMessage(bot.organizationId,'public_chat_messages');
     metrics.event('public_chat');
     try {
       const result = await chat.chat(bot, input, String(req.id));
@@ -51,7 +53,7 @@ export function publicRouter(bots: PublicChatbotRepository, security: SecuritySt
     const bot: PublicChatbot = res.locals.publicBot;
     const [chunk] = await sources.getByIds(bot, [id.data]);
     if (!chunk || chunk.organizationId !== bot.organizationId || chunk.chatbotId !== bot.chatbotId) throw notFound();
-    res.json({ id: chunk.id, title: chunk.title.slice(0, 200), page: chunk.page,
+    res.json({ id: chunk.id, sourceType:chunk.sourceType??'document', sourceId:chunk.sourceId, pageId:chunk.pageId??null, canonicalUrl:chunk.canonicalUrl??null, title: chunk.title.slice(0, 200), page: chunk.page,
       section: chunk.section?.slice(0, 200) ?? null, excerpt: chunk.text.slice(0, 1500) });
   });
   return router;

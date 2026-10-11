@@ -1,3 +1,4 @@
+import { HttpError } from '../security/errors.js';
 import type { SecurityStore } from '../security/repository.js';
 import { auditContext } from '../security/http.js';
 import {
@@ -40,6 +41,7 @@ function sendError(
   response: Response,
   error: unknown,
 ): void {
+  if (error instanceof HttpError) { response.status(error.status).json({error:{code:error.code,message:error.message}}); return; }
   if (error instanceof ZodError) {
     response.status(400).json({
       error: 'invalid_request',
