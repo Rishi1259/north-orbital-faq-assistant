@@ -1,3 +1,5 @@
+import { LeadService } from './leads/service.js';
+import { leadAdminRouter } from './leads/router.js';
 import type { SourceService } from './sources/service.js';
 import { sourceRouter } from './sources/router.js';
 import type { CommercialService } from './commercial/service.js';
@@ -157,6 +159,8 @@ export function createApp(
   });
   app.get('/internal/metrics', metrics.endpoint);
 
+  app.use('/api/public/chatbots/:publicId/leads',express.json({limit:'12kb'}));
+  app.use('/api/public/chatbots/:publicId/handoff',express.json({limit:'12kb'}));
   app.use(
     express.json({
       limit: '16kb',
@@ -188,6 +192,7 @@ export function createApp(
   app.use(['/api/plans', '/api/account', '/api/organizations', '/api/sources', '/api/document-sources', '/api/chat'], authentication(options.security, securityConfig));
   app.use('/api/organizations/:organizationId', tenantAuthorization(options.security, securityConfig, metrics));
   app.post('/api/organizations', organizationCreation(options.security));
+  if (options.commercial && options.security) app.use('/api',leadAdminRouter(new LeadService(options.commercial)));
   if (options.sourceService && options.security) app.use('/api',sourceRouter(options.sourceService,options.security,metrics));
   if (options.commercial && options.security) app.use('/api',commercialRouter(options.commercial,options.security,metrics));
   if (options.publicChatbots && options.security) app.use('/api', publicAdminRouter(options.publicChatbots, options.security));

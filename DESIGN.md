@@ -65,3 +65,7 @@ Knowledge controls share one component and shared delete confirmation for both s
 - Preserve customer text as escaped text and provide explicit deletion consequences.
 - Do not redesign the accepted account or public chat for this milestone.
 - Do not display raw network errors, HTML, embeddings or credentials.
+
+## M29 contact management
+
+Lead settings, paginated leads, and follow-up details extend the same workbench. `frontend/src/app/admin-workbench.scss` now owns the shared knowledge/contact field, button, row, focus, feedback and dialog styles; its colors still resolve to `--admin-*` in `styles.scss`. Natural document scrolling and platform-native selects remain deliberate. Dense lists show contact summaries and status, while visitor messages appear in details. The widget uses its existing Shadow DOM palette and adds an inline contact form, preserving the main chat. No new fonts, theme or decorative motion.

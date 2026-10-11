@@ -55,8 +55,8 @@ beforeEach(async()=>{
   cookie=login.headers['set-cookie'][0].split(';')[0];csrf=login.body.csrfToken;
   page='Orion workshops start at nine on Saturdays.';map=['/a'];etag='v1';notModified=false;broken=false;embedding.mockClear();
 });
-it('Gate 1: seventh migration, scoped constraints, normalized URL uniqueness',async()=>{
-  expect((await pool.query('SELECT count(*) FROM pgmigrations')).rows[0].count).toBe('7');const s=await create();
+it('Gate 1: additive migrations, scoped constraints, normalized URL uniqueness',async()=>{
+  expect((await pool.query('SELECT count(*) FROM pgmigrations')).rows[0].count).toBe('8');const s=await create();
   await expect(create()).rejects.toMatchObject({code:'23505'});
   await expect(pool.query("INSERT INTO website_pages(organization_id,chatbot_id,website_source_id,canonical_url,path,title,state) VALUES($1,$2,$3,'https://example.com/x','/x','x','active')",[other.organizationId,other.chatbotId,s.id])).rejects.toMatchObject({code:'23503'});
 });

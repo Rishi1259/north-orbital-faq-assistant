@@ -12,6 +12,8 @@ export function createMetrics(config: SecurityConfig, database?: Pick<Pool,'quer
   const crawlCounts=new Gauge({name:'north_orbital_crawl_jobs',help:'Retained durable crawl jobs by finite state.',labelNames:['state'],registers:[registry]});
   const queueAge=new Gauge({name:'north_orbital_crawl_queue_age_seconds',help:'Oldest due queued crawl age.',registers:[registry]});
   const pages=new Gauge({name:'north_orbital_crawl_pages_processed',help:'Pages processed in retained successful runs.',registers:[registry]});
+  const handoffs=new Gauge({name:'north_orbital_handoffs',help:'Retained handoff requests by finite status.',labelNames:['status'],registers:[registry]});
+  const handoffAge=new Gauge({name:'north_orbital_handoff_queue_age_seconds',help:'Age of oldest open follow-up request.',registers:[registry]});
   const middleware: RequestHandler = (req, res, next) => {
     // Fixed route classes only: never label with paths, IDs, filenames or query strings.
     const route = req.path.startsWith('/api/public/') ? 'public' : req.path.startsWith('/api/auth/') ? 'auth' :
@@ -31,6 +33,9 @@ export function createMetrics(config: SecurityConfig, database?: Pick<Pool,'quer
       const aggregates=(await database.query(`SELECT coalesce(max(extract(epoch FROM now()-available_at)) FILTER(WHERE state='queued' AND available_at<=now()),0)::float8 age,
         coalesce(sum(pages_processed) FILTER(WHERE state='successful'),0)::float8 pages FROM website_crawl_jobs`)).rows[0];
       queueAge.set(aggregates.age);pages.set(aggregates.pages);
+      const requests=(await database.query('SELECT status,count(*)::float8 n FROM handoff_requests GROUP BY status')).rows;
+      for(const status of ['requested','acknowledged','resolved','cancelled'])handoffs.set({status},requests.find(r=>r.status===status)?.n??0);
+      const age=(await database.query("SELECT coalesce(max(extract(epoch FROM now()-requested_at)),0)::float8 age FROM handoff_requests WHERE status IN ('requested','acknowledged')")).rows[0];handoffAge.set(age.age);
     }
     res.type(registry.contentType).send(await registry.metrics());
   };

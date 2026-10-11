@@ -57,13 +57,7 @@ interface Faq {id:string;question:string;answer:string;category:string;revision?
       <h4 id="delete-title">Delete {{deleting()?.faq ? 'FAQ' : 'website'}}?</h4><p id="delete-description">{{deleting()?.name}} will be removed from answers. Website deletion also removes its pages and pending sync work.</p>
       <button autofocus (click)="cancelDelete()" [disabled]="busy()">Cancel</button><button class="danger" (click)="deleteConfirmed()" [disabled]="busy()">Delete source</button>
     </dialog>
-  </section>`,styles:[`
-    :host{display:block}section{border-top:1px solid var(--admin-border);margin-top:2rem;padding-top:1rem;color:var(--admin-text)}
-    label{display:block;margin-top:1rem}input,select,textarea{box-sizing:border-box;display:block;width:min(100%,36rem);padding:.6rem;font:inherit}textarea{resize:none}
-    button{padding:.6rem .8rem;margin:.4rem .4rem .4rem 0;cursor:pointer}button:disabled{cursor:default;opacity:.6}button:enabled:hover{background:var(--admin-muted)}button:enabled:active{transform:translateY(1px)}
-    :focus-visible{outline:3px solid var(--admin-primary);outline-offset:2px}.feedback{min-height:1.5em}.sources{list-style:none;padding:0}.sources li{padding:1rem 0;border-bottom:1px solid var(--admin-border);overflow-wrap:anywhere}
-    dl{display:grid;grid-template-columns:minmax(7rem,1fr) 2fr;gap:.3rem}dd{margin:0}.answer{white-space:pre-wrap}dialog{max-width:min(32rem,80vw);max-height:80vh;overflow:auto;border:1px solid var(--admin-border);border-radius:12px;padding:1.5rem}dialog::backdrop{background:#17203380}.danger{color:var(--admin-danger)}
-  `]})
+  </section>`,styleUrls:['./admin-workbench.scss']})
 export class Knowledge implements OnChanges,OnDestroy {
   @Input({required:true}) organizationId='';@Input() csrf='';@Input() canManage=false;
   @ViewChild('confirmation') confirmation?:ElementRef<HTMLDialogElement>;@ViewChild('urlInput') urlInput?:ElementRef<HTMLInputElement>;@ViewChild('questionInput') questionInput?:ElementRef<HTMLInputElement>;

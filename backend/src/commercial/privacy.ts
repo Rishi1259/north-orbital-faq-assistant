@@ -1,9 +1,13 @@
+import { settingsProjection,leadProjection,handoffProjection } from '../leads/model.js';
 import { appendAudit, type Audit } from '../security/repository.js';
 import type { CommercialService } from './service.js';
 import { keyColumns } from './api-keys.js';
 import { deriveOnboarding } from './model.js';
 // Explicit projections are the privacy boundary; never serialize database rows from SELECT *.
 const exportQueries = {
+  leadSettings:`SELECT chatbot_id,${settingsProjection},consent_version,created_at,updated_at FROM lead_capture_settings WHERE organization_id=$1 AND created_at<=$4 ORDER BY chatbot_id LIMIT $2 OFFSET $3`,
+  leads:`SELECT ${leadProjection} FROM leads WHERE organization_id=$1 AND created_at<=$4 ORDER BY id LIMIT $2 OFFSET $3`,
+  handoffs:`SELECT ${handoffProjection} FROM handoff_requests WHERE organization_id=$1 AND created_at<=$4 ORDER BY id LIMIT $2 OFFSET $3`,
   websiteSources: `SELECT id,chatbot_id,canonical_seed_url,status,sync_mode,next_sync_at,last_attempted_at,last_successful_at,created_at,updated_at FROM website_sources WHERE organization_id=$1 AND created_at<=$4 ORDER BY id LIMIT $2 OFFSET $3`,
   websitePages: `SELECT id,chatbot_id,website_source_id,canonical_url,title,state,last_seen_at,indexed_at FROM website_pages WHERE organization_id=$1 AND created_at<=$4 ORDER BY id LIMIT $2 OFFSET $3`,
   manualFaqs: `SELECT id,chatbot_id,question,answer,category,status,created_at,updated_at FROM manual_faqs WHERE organization_id=$1 AND created_at<=$4 ORDER BY id LIMIT $2 OFFSET $3`,

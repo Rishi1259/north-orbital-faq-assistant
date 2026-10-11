@@ -2,7 +2,7 @@
 // maps only service endpoints to the documented loopback ports, then runs Node.
 import {execFile,spawn} from 'node:child_process';
 import {promisify} from 'node:util';
-const allowed = new Set(['scripts/verify-commercial.mjs','scripts/verify-website-knowledge.mjs','scripts/verify-rag.mjs','dist/operations/object-backup.js']);
+const allowed = new Set(['scripts/verify-leads.mjs','scripts/verify-commercial.mjs','scripts/verify-website-knowledge.mjs','scripts/verify-rag.mjs','dist/operations/object-backup.js']);
 const script=process.argv[2];
 if(!allowed.has(script))throw new Error('Unsupported local acceptance script.');
 try {

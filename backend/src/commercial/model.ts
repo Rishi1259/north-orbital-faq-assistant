@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { HttpError } from '../security/errors.js';
-export const MetricSchema = z.enum(['public_chat_messages','internal_chat_messages','documents_created','ingestion_pages','storage_bytes','api_requests','website_pages_indexed','website_crawl_requests','manual_faq_entries']);
+export const MetricSchema = z.enum(['public_chat_messages','internal_chat_messages','documents_created','ingestion_pages','storage_bytes','api_requests','website_pages_indexed','website_crawl_requests','manual_faq_entries','leads_created','handoffs_requested']);
 export type Metric = z.infer<typeof MetricSchema>;
 export const ScopeSchema = z.enum(['chat:write','chatbots:read','documents:read','documents:write','analytics:read']);
 export const CreateKeySchema = z.object({ name: z.string().trim().min(1).max(80),
@@ -12,6 +12,7 @@ export interface Subscription {
   current_period_start: Date; current_period_end: Date; trial_ends_at: Date|null; grace_ends_at: Date|null;
 }
 export interface Plan {
+  lead_capture_enabled:boolean; human_handoff_enabled:boolean; monthly_lead_limit:number; monthly_handoff_limit:number;
   website_source_limit: number; knowledge_page_limit: number; indexed_bytes_limit: string;
   code: string; name: string; status: string; monthly_price_inr_minor: string|null; monthly_price_usd_minor: string|null;
   chatbot_limit: number; monthly_message_limit: number; document_limit: number; storage_bytes_limit: string;
@@ -32,7 +33,7 @@ export function subscriptionAllowed(s: Subscription, now = new Date()) {
 }
 export function entitlements(s: Subscription, p: Plan, now = new Date()) {
   const allowed = subscriptionAllowed(s, now);
-  return { allowed, apiAccess: allowed && p.api_access, advancedAnalytics: allowed && p.advanced_analytics,
+  return { allowed, leadCaptureEnabled:allowed && p.lead_capture_enabled, humanHandoffEnabled:allowed && p.human_handoff_enabled, monthlyLeadLimit:p.monthly_lead_limit, monthlyHandoffLimit:p.monthly_handoff_limit, apiAccess: allowed && p.api_access, advancedAnalytics: allowed && p.advanced_analytics,
     websiteSourceLimit: p.website_source_limit, knowledgePageLimit: p.knowledge_page_limit, indexedBytesLimit: Number(p.indexed_bytes_limit),
     chatbotLimit: p.chatbot_limit, monthlyMessageLimit: p.monthly_message_limit, documentLimit: p.document_limit,
     storageBytesLimit: Number(p.storage_bytes_limit), teamMemberLimit: p.team_member_limit,

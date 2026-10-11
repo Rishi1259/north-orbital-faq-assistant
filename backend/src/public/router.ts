@@ -1,3 +1,5 @@
+import { LeadService } from '../leads/service.js';
+import { SubmissionSchema } from '../leads/model.js';
 import type { CommercialService } from '../commercial/service.js';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -14,6 +16,7 @@ import { publicConfig, type PublicChatbot, type PublicChatbotRepository } from '
 export function publicRouter(bots: PublicChatbotRepository, security: SecurityStore, config: SecurityConfig,
   chat: ProductionChatService | undefined, sources: RetrievalRepository | undefined, metrics: Metrics, commercial?: CommercialService) {
   const router = Router();
+  const leads=commercial?new LeadService(commercial):undefined;
   router.use('/chatbots/:publicId', async (req, res, next) => {
     res.vary('Origin'); res.set('Cache-Control', 'no-store');
     const bot = await bots.resolve(String(req.params.publicId));
@@ -28,7 +31,14 @@ export function publicRouter(bots: PublicChatbotRepository, security: SecuritySt
     if (req.method === 'OPTIONS') { res.status(204).end(); return; }
     res.locals.publicBot = bot; next();
   });
-  router.get('/chatbots/:publicId/config', (_req, res) => res.json(publicConfig(res.locals.publicBot)));
+  router.get('/chatbots/:publicId/config', async (_req, res) => {const bot:PublicChatbot=res.locals.publicBot;res.json({...publicConfig(bot),...(leads?{leadCapture:await leads.publicSettings(bot.organizationId,bot.chatbotId)}:{})});});
+  for(const [path,handoff,limit] of [['leads',false,10],['handoff',true,5]] as const) router.post(`/chatbots/:publicId/${path}`,async(req,res)=>{
+    const bot:PublicChatbot=res.locals.publicBot;
+    await enforceLimit(security,res,metrics,handoff?'public-handoff':'public-lead',[bot.publicId,req.ip??'unknown'],limit,900);
+    if(!leads)throw new HttpError(503,'UNAVAILABLE','Contact requests are unavailable.');
+    await leads.submit(bot,req.get('origin'),SubmissionSchema.parse(req.body),handoff,String(req.id));
+    res.status(202).json({status:'accepted'});
+  });
   router.post('/chatbots/:publicId/chat', async (req, res) => {
     const bot: PublicChatbot = res.locals.publicBot;
     await enforceLimit(security, res, metrics, 'public-chat', [bot.publicId, req.ip ?? 'unknown'], config.PUBLIC_CHAT_RATE_LIMIT, config.PUBLIC_CHAT_RATE_WINDOW_SECONDS);

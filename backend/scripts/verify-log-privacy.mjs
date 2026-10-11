@@ -9,6 +9,7 @@ for (const name of ['.env.security.local','.env.smoke.local']) {
   try { const values=parse(await readFile(new URL(`../../${name}`,import.meta.url))); privateValues.push(...Object.entries(values).filter(([k])=>/SECRET|TOKEN|PASSWORD/.test(k)).map(([,v])=>v)); } catch {}
 }
 const checks={
+  leadCanaries: /M29Name[a-f0-9]{32}|m29-[a-f0-9]{32}@example\.test|M29Company[a-f0-9]{32}|M29Message[a-f0-9]{32}/g,
   apiKeySecrets: /no_live_[A-Za-z0-9_-]{43}/g,
   documentContent: /Volunteers should cancel|12 hours|Princess Donut|ACKNOWLEDGEMENTS/g,
   websiteFaqContent: /The Atlas observatory tour begins|Cancel lunar workshop bookings/g,

@@ -12,13 +12,15 @@ export interface Session { id: string; userId: string; email: string; csrfHash: 
 export interface Audit {
   action: string; targetType: string; organizationId?: string; chatbotId?: string;
   actorUserId?: string; targetId?: string; requestId?: string;
-  metadata?: { result?: 'success' | 'failure'; count?: number; enabled?: boolean; role?: Role };
+  metadata?: { result?: 'success' | 'failure'; count?: number; enabled?: boolean; role?: Role; assignedUserId?:string|null; status?:'new'|'contacted'|'qualified'|'closed'|'requested'|'acknowledged'|'resolved'|'cancelled' };
 }
 export async function appendAudit(db: Pick<Pool, 'query'>, event: Audit) {
   // Explicit allowlist prevents callers from accidentally persisting body/content/credentials.
   const m = event.metadata;
   const metadata = { ...(m?.result && { result: m.result }), ...(m?.count !== undefined && { count: m.count }),
-    ...(m?.enabled !== undefined && { enabled: m.enabled }), ...(m?.role && { role: m.role }) };
+    ...(m?.enabled !== undefined && { enabled: m.enabled }), ...(m?.role && { role: m.role }),
+    ...(m?.assignedUserId===null?{assignedUserId:null}:z.uuid().safeParse(m?.assignedUserId).success?{assignedUserId:m?.assignedUserId}:{}),
+    ...(m?.status && ['new','contacted','qualified','closed','requested','acknowledged','resolved','cancelled'].includes(m.status)?{status:m.status}:{}) };
   await db.query(`INSERT INTO audit_events(organization_id,actor_user_id,chatbot_id,action,target_type,target_id,request_id,metadata)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, [event.organizationId ?? null, event.actorUserId ?? null,
     event.chatbotId ?? null, event.action, event.targetType, event.targetId ?? null,

@@ -1,3 +1,4 @@
+import { Leads } from './leads';
 import { Knowledge } from './knowledge';
 import { Component, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -8,7 +9,7 @@ interface Organization {id:string;name:string;role:string}
 interface Usage {used:number;limit:number|null;remaining:number|null;percentage:number|null}
 interface Key {id:string;name:string;key_prefix:string;scopes:string[];expires_at:string|null;revoked_at:string|null}
 @Component({
-  selector:'app-account', imports:[FormsModule,Knowledge],
+  selector:'app-account', imports:[FormsModule,Knowledge,Leads],
   template: `
     <section aria-labelledby="account-title">
       <h2 id="account-title">Organization account</h2>
@@ -37,6 +38,8 @@ interface Key {id:string;name:string;key_prefix:string;scopes:string[];expires_a
           }
           </dl>
           <button (click)="knowledgeOpen.set(!knowledgeOpen())">{{knowledgeOpen() ? 'Hide knowledge sources' : 'Manage knowledge sources'}}</button>
+          <button (click)="leadsOpen.set(!leadsOpen())">{{leadsOpen()?'Hide contact requests':'Leads and follow-up'}}</button>
+          @if(leadsOpen()){<app-leads [organizationId]="organizationId" [csrf]="csrf" [canManage]="canManage()" />}
           @if(knowledgeOpen()){<app-knowledge [organizationId]="organizationId" [csrf]="csrf" [canManage]="canManage()" />}
           <h3>Installation checklist</h3>
           <ul>@for(step of onboarding();track step.name){<li>{{step.name}}: {{step.ready ? 'Ready' : 'Pending'}}</li>}</ul>
@@ -68,6 +71,7 @@ interface Key {id:string;name:string;key_prefix:string;scopes:string[];expires_a
 })
 export class Account {
   private http = inject(HttpClient);
+  leadsOpen=signal(false);
   csrf = '';
   knowledgeOpen=signal(false);
   email='';password='';organizationId='';keyName='';expiresAt='';keyOffset=0;

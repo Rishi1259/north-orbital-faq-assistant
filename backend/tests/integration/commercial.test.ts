@@ -66,7 +66,7 @@ beforeEach(async()=>{
   await pool.query('INSERT INTO chatbot_allowed_origins(organization_id,chatbot_id,origin) VALUES($1,$2,$3)',[org,bot,origin]);
 });
 it('Gate 1: seeds plans/subscriptions, constraints and indexes without deleting prior organizations',async()=>{
-  expect((await pool.query('SELECT count(*) FROM pgmigrations')).rows[0].count).toBe('7');
+  expect((await pool.query('SELECT count(*) FROM pgmigrations')).rows[0].count).toBe('8');
   expect((await pool.query('SELECT code FROM plans ORDER BY code')).rows.map(r=>r.code)).toEqual(['beta','business','growth','starter']);
   expect((await pool.query('SELECT count(*) FROM organization_subscriptions')).rows[0].count).toBe('2');
   await expect(plan('document_limit=-1')).rejects.toMatchObject({code:'23514'});

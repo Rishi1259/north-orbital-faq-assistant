@@ -70,7 +70,7 @@ export class CommercialService {
     const messages = (used.public_chat_messages??0)+(used.internal_chat_messages??0);
     return { organization: (await db.query('SELECT id,name,slug,created_at FROM organizations WHERE id=$1',[org])).rows[0],
       subscription:s,plan:p,entitlements:state.entitlements, period:{start:s.current_period_start,end:s.current_period_end},
-      usage:{websiteSources:quota(inventory.websites,p.website_source_limit),knowledgePages:quota(inventory.knowledgePages,p.knowledge_page_limit),indexedBytes:quota(inventory.indexedBytes,Number(p.indexed_bytes_limit)),
+      usage:{leadsCreated:quota(used.leads_created??0,p.monthly_lead_limit),handoffsRequested:quota(used.handoffs_requested??0,p.monthly_handoff_limit),websiteSources:quota(inventory.websites,p.website_source_limit),knowledgePages:quota(inventory.knowledgePages,p.knowledge_page_limit),indexedBytes:quota(inventory.indexedBytes,Number(p.indexed_bytes_limit)),
         websitePagesIndexed:quota(used.website_pages_indexed??0,null),websiteCrawlRequests:quota(used.website_crawl_requests??0,null),manualFaqEntries:quota(used.manual_faq_entries??0,null),messages:quota(messages,p.monthly_message_limit),
         publicChatMessages:quota(used.public_chat_messages??0,null),internalChatMessages:quota(used.internal_chat_messages??0,null),
         chatbots:quota(inventory.chatbots,p.chatbot_limit),documents:quota(inventory.documents,p.document_limit),
